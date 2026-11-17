@@ -12,6 +12,3 @@
 |8|Which Python version introduced type parameter syntax?|PEP 695|
 |9|What is the difference between free-threaded and standard CPython builds?|PEP 703|
 |10|What are the major changes developers should know when upgrading to Python 3.13?|What's New in Python 3.13|
-
-
-
