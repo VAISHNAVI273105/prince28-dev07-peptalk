@@ -1,14 +1,69 @@
-
 [
   {
     "id": "pep-0634",
     "pep_number": 634,
-    "title": "Structural Pattern Matching",
+    "title": "Structural Pattern Matching: Specification",
     "status": "Final",
     "type": "PEP",
     "python_version": "3.10",
-    "created": "2021-02-08",
-    "source_url": "https://peps.python.org/pep-0634/"
+    "created": "2020-09-12",
+    "source_url": "https://peps.python.org/pep-0634/",
+    "summary": "Specifies the syntax and semantics of the match statement and pattern syntax for structural pattern matching in Python."
+  },
+  {
+    "id": "pep-0604",
+    "pep_number": 604,
+    "title": "Allow writing union types as X | Y",
+    "status": "Final",
+    "type": "PEP",
+    "python_version": "3.10",
+    "created": "2019-08-28",
+    "source_url": "https://peps.python.org/pep-0604/",
+    "summary": "Introduces the syntax X | Y for type annotations as an alternative to typing.Union[X, Y]."
+  },
+  {
+    "id": "pep-0612",
+    "pep_number": 612,
+    "title": "Parameter Specification Variables",
+    "status": "Final",
+    "type": "PEP",
+    "python_version": "3.10",
+    "created": "2019-12-18",
+    "source_url": "https://peps.python.org/pep-0612/",
+    "summary": "Introduces typing.ParamSpec to enable typing of callables that forward their parameters to other callables."
+  },
+  {
+    "id": "pep-0618",
+    "pep_number": 618,
+    "title": "Add Optional Length-Checking To zip",
+    "status": "Final",
+    "type": "PEP",
+    "python_version": "3.10",
+    "created": "2020-05-01",
+    "source_url": "https://peps.python.org/pep-0618/",
+    "summary": "Adds the optional strict boolean keyword argument to the zip built-in function to verify all iterables are of equal length."
+  },
+  {
+    "id": "pep-0626",
+    "pep_number": 626,
+    "title": "Precise line numbers for debugging and other tools",
+    "status": "Final",
+    "type": "PEP",
+    "python_version": "3.10",
+    "created": "2020-08-14",
+    "source_url": "https://peps.python.org/pep-0626/",
+    "summary": "Provides precise and reliable line numbers for Python bytecode execution to support debugging and profiling tools."
+  },
+  {
+    "id": "whats-new-3-10",
+    "pep_number": null,
+    "title": "What's New In Python 3.10",
+    "status": "Final",
+    "type": "What's New",
+    "python_version": "3.10",
+    "created": "2021-10-04",
+    "source_url": "https://docs.python.org/3.10/whatsnew/3.10.html",
+    "summary": "Covers major additions in Python 3.10 including structural pattern matching, parenthesized context managers, and improved error reporting."
   },
   {
     "id": "pep-0654",
@@ -18,7 +73,63 @@
     "type": "PEP",
     "python_version": "3.11",
     "created": "2021-03-15",
-    "source_url": "https://peps.python.org/pep-0654/"
+    "source_url": "https://peps.python.org/pep-0654/",
+    "summary": "Introduces ExceptionGroup and new except* syntax to support raising and handling multiple independent exceptions simultaneously."
+  },
+  {
+    "id": "pep-0657",
+    "pep_number": 657,
+    "title": "Include Fine-Grained Error Locations in Tracebacks",
+    "status": "Final",
+    "type": "PEP",
+    "python_version": "3.11",
+    "created": "2021-05-09",
+    "source_url": "https://peps.python.org/pep-0657/",
+    "summary": "Enhances tracebacks by displaying exact column ranges indicating the specific expression or subexpression that raised an error."
+  },
+  {
+    "id": "pep-0673",
+    "pep_number": 673,
+    "title": "Self Type",
+    "status": "Final",
+    "type": "PEP",
+    "python_version": "3.11",
+    "created": "2022-01-08",
+    "source_url": "https://peps.python.org/pep-0673/",
+    "summary": "Introduces typing.Self to concisely annotate methods that return an instance of their own class."
+  },
+  {
+    "id": "pep-0675",
+    "pep_number": 675,
+    "title": "Arbitrary Literal String Type",
+    "status": "Final",
+    "type": "PEP",
+    "python_version": "3.11",
+    "created": "2022-01-14",
+    "source_url": "https://peps.python.org/pep-0675/",
+    "summary": "Introduces typing.LiteralString to ensure strings accepted by security-sensitive APIs are composed exclusively from string literals."
+  },
+  {
+    "id": "pep-0680",
+    "pep_number": 680,
+    "title": "tomllib: Support for Parsing TOML in the Standard Library",
+    "status": "Final",
+    "type": "PEP",
+    "python_version": "3.11",
+    "created": "2022-01-20",
+    "source_url": "https://peps.python.org/pep-0680/",
+    "summary": "Adds the tomllib standard library module for fast parsing of TOML documents based on tomli."
+  },
+  {
+    "id": "whats-new-3-11",
+    "pep_number": null,
+    "title": "What's New In Python 3.11",
+    "status": "Final",
+    "type": "What's New",
+    "python_version": "3.11",
+    "created": "2022-10-24",
+    "source_url": "https://docs.python.org/3.11/whatsnew/3.11.html",
+    "summary": "Details major additions in Python 3.11 including Faster CPython optimizations, fine-grained tracebacks, and exception groups."
   },
   {
     "id": "pep-0695",
@@ -28,7 +139,63 @@
     "type": "PEP",
     "python_version": "3.12",
     "created": "2022-11-14",
-    "source_url": "https://peps.python.org/pep-0695/"
+    "source_url": "https://peps.python.org/pep-0695/",
+    "summary": "Introduces clean type parameter syntax for generic classes and functions, plus the type statement for creating type aliases."
+  },
+  {
+    "id": "pep-0701",
+    "pep_number": 701,
+    "title": "Syntactic formalization of f-strings",
+    "status": "Final",
+    "type": "PEP",
+    "python_version": "3.12",
+    "created": "2023-03-24",
+    "source_url": "https://peps.python.org/pep-0701/",
+    "summary": "Formalizes f-string grammar in the PEG parser, removing restrictions on quotes, backslashes, comments, and nesting levels."
+  },
+  {
+    "id": "pep-0684",
+    "pep_number": 684,
+    "title": "A Per-Interpreter GIL",
+    "status": "Final",
+    "type": "PEP",
+    "python_version": "3.12",
+    "created": "2022-05-09",
+    "source_url": "https://peps.python.org/pep-0684/",
+    "summary": "Introduces per-interpreter Global Interpreter Locks, allowing isolated subinterpreters to run truly concurrently in separate OS threads."
+  },
+  {
+    "id": "pep-0669",
+    "pep_number": 669,
+    "title": "Low Impact Monitoring for CPython",
+    "status": "Final",
+    "type": "PEP",
+    "python_version": "3.12",
+    "created": "2021-12-07",
+    "source_url": "https://peps.python.org/pep-0669/",
+    "summary": "Defines a low-impact execution event monitoring API for profilers, debuggers, and coverage measurement tools."
+  },
+  {
+    "id": "pep-0692",
+    "pep_number": 692,
+    "title": "Using TypedDict for more precise **kwargs typing",
+    "status": "Final",
+    "type": "PEP",
+    "python_version": "3.12",
+    "created": "2022-09-08",
+    "source_url": "https://peps.python.org/pep-0692/",
+    "summary": "Allows typing **kwargs with TypedDict to specify valid keyword arguments and their corresponding value types."
+  },
+  {
+    "id": "whats-new-3-12",
+    "pep_number": null,
+    "title": "What's New In Python 3.12",
+    "status": "Final",
+    "type": "What's New",
+    "python_version": "3.12",
+    "created": "2023-10-02",
+    "source_url": "https://docs.python.org/3.12/whatsnew/3.12.html",
+    "summary": "Overview of Python 3.12 updates including formalized f-strings, new type parameter syntax, and per-interpreter GIL."
   },
   {
     "id": "pep-0703",
@@ -38,16 +205,40 @@
     "type": "PEP",
     "python_version": "3.13",
     "created": "2023-06-05",
-    "source_url": "https://peps.python.org/pep-0703/"
+    "source_url": "https://peps.python.org/pep-0703/",
+    "summary": "Details making the Global Interpreter Lock optional in CPython to support multi-threaded parallelism without a global lock."
+  },
+  {
+    "id": "pep-0744",
+    "pep_number": 744,
+    "title": "JIT Compilation",
+    "status": "Accepted",
+    "type": "PEP",
+    "python_version": "3.13",
+    "created": "2024-01-18",
+    "source_url": "https://peps.python.org/pep-0744/",
+    "summary": "Introduces an experimental copy-and-patch Just-In-Time compiler architecture to accelerate Python execution."
+  },
+  {
+    "id": "pep-0667",
+    "pep_number": 667,
+    "title": "Consistent Views of Variable Names and Values",
+    "status": "Final",
+    "type": "PEP",
+    "python_version": "3.13",
+    "created": "2022-01-05",
+    "source_url": "https://peps.python.org/pep-0667/",
+    "summary": "Provides consistent, defined semantics for accessing local variables and frame introspection across scopes."
   },
   {
     "id": "whats-new-3-13",
     "pep_number": null,
-    "title": "What's New in Python 3.13",
+    "title": "What's New In Python 3.13",
     "status": "Final",
     "type": "What's New",
     "python_version": "3.13",
     "created": "2024-10-07",
-    "source_url": "https://docs.python.org/3.13/whatsnew/3.13.html"
+    "source_url": "https://docs.python.org/3.13/whatsnew/3.13.html",
+    "summary": "Describes Python 3.13 changes including an improved interactive REPL with multiline editing, experimental free-threading, and JIT compiler."
   }
 ]
