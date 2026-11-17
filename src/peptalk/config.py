@@ -1,5 +1,5 @@
-
 from functools import lru_cache
+from pathlib import Path
 from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -13,9 +13,9 @@ class Settings(BaseSettings):
     )
 
     app_name: str = "peptalk"
-    app_env: Literal["local", "ci", "production"]
-    log_level: str = "INFO"
-    data_file: str = "data/sample_records.json"
+    app_env: Literal["local", "ci", "production"] = "local"
+    log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
+    data_file: Path = Path("data/sample_records.json")
 
 
 @lru_cache
