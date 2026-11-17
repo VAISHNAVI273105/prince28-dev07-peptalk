@@ -1,4 +1,3 @@
-
 from fastapi import FastAPI
 
 from peptalk.api.errors import register_exception_handlers
