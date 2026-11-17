@@ -1,4 +1,4 @@
-﻿# PEPTalk
+# PEPTalk
 
 **Your Modern Python Documentation Assistant**
 
