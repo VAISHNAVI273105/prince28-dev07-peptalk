@@ -1,0 +1,53 @@
+
+[
+  {
+    "id": "pep-0634",
+    "pep_number": 634,
+    "title": "Structural Pattern Matching",
+    "status": "Final",
+    "type": "PEP",
+    "python_version": "3.10",
+    "created": "2021-02-08",
+    "source_url": "https://peps.python.org/pep-0634/"
+  },
+  {
+    "id": "pep-0654",
+    "pep_number": 654,
+    "title": "Exception Groups and except*",
+    "status": "Final",
+    "type": "PEP",
+    "python_version": "3.11",
+    "created": "2021-03-15",
+    "source_url": "https://peps.python.org/pep-0654/"
+  },
+  {
+    "id": "pep-0695",
+    "pep_number": 695,
+    "title": "Type Parameter Syntax",
+    "status": "Final",
+    "type": "PEP",
+    "python_version": "3.12",
+    "created": "2022-11-14",
+    "source_url": "https://peps.python.org/pep-0695/"
+  },
+  {
+    "id": "pep-0703",
+    "pep_number": 703,
+    "title": "Making the Global Interpreter Lock Optional in CPython",
+    "status": "Accepted",
+    "type": "PEP",
+    "python_version": "3.13",
+    "created": "2023-06-05",
+    "source_url": "https://peps.python.org/pep-0703/"
+  },
+  {
+    "id": "whats-new-3-13",
+    "pep_number": null,
+    "title": "What's New in Python 3.13",
+    "status": "Final",
+    "type": "What's New",
+    "python_version": "3.13",
+    "created": "2024-10-07",
+    "source_url": "https://docs.python.org/3.13/whatsnew/3.13.html"
+  }
+]
