@@ -4,6 +4,8 @@ import logging
 import sys
 from datetime import UTC, datetime
 
+from peptalk.api.middleware import request_id_var
+
 
 class JSONFormatter(logging.Formatter):
     """Format application logs as structured JSON."""
@@ -14,7 +16,20 @@ class JSONFormatter(logging.Formatter):
             "level": record.levelname,
             "logger": record.name,
             "message": record.getMessage(),
+            "request_id": request_id_var.get(),
         }
+
+        if hasattr(record, "path"):
+            log_data["path"] = record.path
+
+        if hasattr(record, "method"):
+            log_data["method"] = record.method
+
+        if hasattr(record, "status_code"):
+            log_data["status_code"] = record.status_code
+
+        if hasattr(record, "duration_ms"):
+            log_data["duration_ms"] = record.duration_ms
 
         if record.exc_info:
             log_data["exception"] = self.formatException(record.exc_info)
