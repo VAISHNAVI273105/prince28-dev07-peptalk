@@ -1,4 +1,3 @@
-
 import json
 from pathlib import Path
 from typing import Any
@@ -7,12 +6,11 @@ from typing import Any
 class DocumentStore:
     """Read and retrieve documentation records from a JSON file."""
 
-    def __init__(self, file_path: str) -> None:
+    def __init__(self, file_path: str | Path) -> None:
         self.file_path = Path(file_path)
 
     def get_all(self) -> list[dict[str, Any]]:
         """Return all documentation records."""
-
         if not self.file_path.exists():
             return []
 
@@ -26,7 +24,6 @@ class DocumentStore:
 
     def get_by_id(self, document_id: str) -> dict[str, Any] | None:
         """Return a document matching its ID."""
-
         for document in self.get_all():
             if document.get("id") == document_id:
                 return document

@@ -1,16 +1,16 @@
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
+from peptalk.api.deps import get_document_store
 from peptalk.store import DocumentStore
 
 router = APIRouter(prefix="/v1/documents", tags=["documents"])
 
-store = DocumentStore("data/sample_records.json")
-
 
 @router.get("")
 async def list_documents(
+    store: Annotated[DocumentStore, Depends(get_document_store)],
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
 ) -> dict[str, Any]:
@@ -25,7 +25,10 @@ async def list_documents(
 
 
 @router.get("/{document_id}")
-async def get_document(document_id: str) -> dict[str, Any]:
+async def get_document(
+    document_id: str,
+    store: Annotated[DocumentStore, Depends(get_document_store)],
+) -> dict[str, Any]:
     document = store.get_by_id(document_id)
 
     if document is None:
