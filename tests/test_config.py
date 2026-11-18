@@ -43,3 +43,8 @@ def test_get_document_store_dependency():
     store = get_document_store(settings=settings)
     assert isinstance(store, DocumentStore)
     assert store.file_path == Path("data/sample_records.json")
+
+
+def test_settings_app_env_is_required():
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None)
