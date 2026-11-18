@@ -1,12 +1,20 @@
 import pytest
 from fastapi.testclient import TestClient
 
+from peptalk.api.deps import check_database_readiness, get_document_repository
 from peptalk.api.main import create_app
+from peptalk.db.repository import DocumentStoreAdapter
+from peptalk.store import DocumentStore
 
 
 @pytest.fixture
 def client():
     app = create_app()
+    store = DocumentStore("data/sample_records.json")
+    adapter = DocumentStoreAdapter(store)
+
+    app.dependency_overrides[get_document_repository] = lambda: adapter
+    app.dependency_overrides[check_database_readiness] = lambda: True
 
     with TestClient(app) as test_client:
         yield test_client
