@@ -54,6 +54,10 @@ def _clean_engine_cache():
             "postgresql+psycopg://localhost:5432/peptalk",
             "postgresql+asyncpg://localhost:5432/peptalk",
         ),
+        (
+            "postgresql+psycopg2://localhost:5432/peptalk",
+            "postgresql+asyncpg://localhost:5432/peptalk",
+        ),
     ],
 )
 def test_normalize_supported_schemes(input_url: str, expected_url: str):
@@ -72,7 +76,13 @@ def test_normalize_converts_sslmode_to_ssl_and_preserves_others():
 
 @pytest.mark.parametrize(
     "scheme",
-    ["postgresql", "postgres", "postgresql+asyncpg", "postgresql+psycopg"],
+    [
+        "postgresql",
+        "postgres",
+        "postgresql+asyncpg",
+        "postgresql+psycopg",
+        "postgresql+psycopg2",
+    ],
 )
 def test_normalize_converts_sslmode_across_supported_schemes(scheme: str):
     """Verify sslmode conversion works uniformly across all supported schemes."""

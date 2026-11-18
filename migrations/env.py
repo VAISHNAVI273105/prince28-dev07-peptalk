@@ -32,6 +32,7 @@ SUPPORTED_SCHEMES = {
     "postgres",
     "postgresql+asyncpg",
     "postgresql+psycopg",
+    "postgresql+psycopg2",
 }
 
 

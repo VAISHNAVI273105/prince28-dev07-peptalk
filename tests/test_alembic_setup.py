@@ -105,6 +105,10 @@ def test_database_url_loaded_from_dotenv_when_unset(
             "postgresql+psycopg://localhost:5432/peptalk",
             "postgresql+psycopg://localhost:5432/peptalk",
         ),
+        (
+            "postgresql+psycopg2://localhost:5432/peptalk",
+            "postgresql+psycopg://localhost:5432/peptalk",
+        ),
     ],
 )
 def test_url_conversion_supported_formats(input_url: str, expected_url: str):

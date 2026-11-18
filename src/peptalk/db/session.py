@@ -25,6 +25,7 @@ SUPPORTED_SCHEMES = {
     "postgres",
     "postgresql+asyncpg",
     "postgresql+psycopg",
+    "postgresql+psycopg2",
 }
 
 _engine: AsyncEngine | None = None
