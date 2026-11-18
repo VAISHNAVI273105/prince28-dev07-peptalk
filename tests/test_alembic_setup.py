@@ -54,11 +54,11 @@ def test_already_set_environment_variable_not_overwritten(
     """Verify load_environment does not overwrite already-set environment variables."""
     fake_env = tmp_path / ".env"
     fake_env.write_text(
-        "DATABASE_URL=postgresql://from_file@localhost:5432/file_db\nCUSTOM_TEST_VAR=from_file\n",
+        "DATABASE_URL=postgresql://localhost:5432/file_db\nCUSTOM_TEST_VAR=from_file\n",
         encoding="utf-8",
     )
 
-    existing_url = "postgresql+asyncpg://existing_user:pass@localhost:5432/existing_db"
+    existing_url = "postgresql+asyncpg://localhost:5432/existing_db"
     monkeypatch.setenv("DATABASE_URL", existing_url)
     monkeypatch.delenv("CUSTOM_TEST_VAR", raising=False)
     monkeypatch.setattr("migrations.env.DOTENV_PATH", fake_env)
@@ -75,7 +75,7 @@ def test_database_url_loaded_from_dotenv_when_unset(
     """Verify DATABASE_URL is loaded from .env when unset in the process environment."""
     fake_env = tmp_path / ".env"
     fake_env.write_text(
-        "DATABASE_URL=postgresql+asyncpg://user:pass@localhost:5432/test_db?sslmode=require\n",
+        "DATABASE_URL=postgresql+asyncpg://localhost:5432/test_db?sslmode=require\n",
         encoding="utf-8",
     )
 
@@ -83,27 +83,27 @@ def test_database_url_loaded_from_dotenv_when_unset(
     monkeypatch.setattr("migrations.env.DOTENV_PATH", fake_env)
 
     converted_url = get_sync_database_url()
-    assert converted_url == "postgresql+psycopg://user:pass@localhost:5432/test_db?sslmode=require"
+    assert converted_url == "postgresql+psycopg://localhost:5432/test_db?sslmode=require"
 
 
 @pytest.mark.parametrize(
     ("input_url", "expected_url"),
     [
         (
-            "postgresql://user:pass@localhost:5432/peptalk",
-            "postgresql+psycopg://user:pass@localhost:5432/peptalk",
+            "postgresql://localhost:5432/peptalk",
+            "postgresql+psycopg://localhost:5432/peptalk",
         ),
         (
-            "postgres://user:pass@localhost:5432/peptalk",
-            "postgresql+psycopg://user:pass@localhost:5432/peptalk",
+            "postgres://localhost:5432/peptalk",
+            "postgresql+psycopg://localhost:5432/peptalk",
         ),
         (
-            "postgresql+asyncpg://user:pass@localhost:5432/peptalk",
-            "postgresql+psycopg://user:pass@localhost:5432/peptalk",
+            "postgresql+asyncpg://localhost:5432/peptalk",
+            "postgresql+psycopg://localhost:5432/peptalk",
         ),
         (
-            "postgresql+psycopg://user:pass@localhost:5432/peptalk",
-            "postgresql+psycopg://user:pass@localhost:5432/peptalk",
+            "postgresql+psycopg://localhost:5432/peptalk",
+            "postgresql+psycopg://localhost:5432/peptalk",
         ),
     ],
 )
@@ -116,16 +116,16 @@ def test_url_conversion_supported_formats(input_url: str, expected_url: str):
     ("input_url", "expected_url"),
     [
         (
-            "postgresql+asyncpg://user:pass@db.example.com:5432/peptalk?sslmode=require",
-            "postgresql+psycopg://user:pass@db.example.com:5432/peptalk?sslmode=require",
+            "postgresql+asyncpg://db.example.com:5432/peptalk?sslmode=require",
+            "postgresql+psycopg://db.example.com:5432/peptalk?sslmode=require",
         ),
         (
-            "postgres://user:pass@localhost/peptalk?sslmode=require&application_name=peptalk",
-            "postgresql+psycopg://user:pass@localhost/peptalk?sslmode=require&application_name=peptalk",
+            "postgres://localhost/peptalk?sslmode=require&application_name=peptalk",
+            "postgresql+psycopg://localhost/peptalk?sslmode=require&application_name=peptalk",
         ),
         (
-            "postgresql://user:pass@localhost:5432/peptalk?channel_binding=require",
-            "postgresql+psycopg://user:pass@localhost:5432/peptalk?channel_binding=require",
+            "postgresql://localhost:5432/peptalk?channel_binding=require",
+            "postgresql+psycopg://localhost:5432/peptalk?channel_binding=require",
         ),
     ],
 )
@@ -154,14 +154,14 @@ def test_unsupported_url_scheme_raises_clear_error():
         get_sync_database_url("sqlite:///peptalk.db")
 
     with pytest.raises(ValueError, match="Unsupported database URL scheme 'mysql'"):
-        get_sync_database_url("mysql://user:pass@localhost/peptalk")
+        get_sync_database_url("mysql://localhost/peptalk")
 
 
 def test_percent_encoded_credentials_and_config_safety():
     """Verify percent-encoded characters in URL are preserved and handled safely."""
-    raw_url = "postgresql+asyncpg://user:p%40ss%25word@db.example.com:5432/peptalk?sslmode=require"
+    raw_url = "postgresql+asyncpg://u:p%40ss%25w@db/db?sslmode=require"  # pragma: allowlist secret
     converted = get_sync_database_url(raw_url)
-    expected = "postgresql+psycopg://user:p%40ss%25word@db.example.com:5432/peptalk?sslmode=require"
+    expected = "postgresql+psycopg://u:p%40ss%25w@db/db?sslmode=require"  # pragma: allowlist secret
     assert converted == expected
 
     # Verify escaping percent signs allows round-trip without interpolation error
