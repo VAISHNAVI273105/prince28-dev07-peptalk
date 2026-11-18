@@ -26,7 +26,7 @@ async def explain_query(json_filter_str: str) -> None:
     query_sql = (
         "EXPLAIN (ANALYZE, BUFFERS, COSTS, TIMING, SUMMARY) "
         "SELECT id, title, metadata FROM documents "
-        "WHERE metadata @> :filter::jsonb;"
+        "WHERE metadata @> CAST(:filter AS jsonb);"
     )
 
     async with session_scope() as session:
@@ -54,6 +54,7 @@ async def explain_query(json_filter_str: str) -> None:
             for line in lines_forced:
                 print(f"  {line}")
         except Exception as exc:
+            await session.rollback()
             print(f"  Execution failed: {exc}")
 
         print("\n" + "=" * 80)
@@ -85,6 +86,13 @@ async def explain_query(json_filter_str: str) -> None:
         print("=" * 80)
 
 
+async def run(filter_json: str) -> None:
+    try:
+        await explain_query(filter_json)
+    finally:
+        await dispose_engine()
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Explain JSONB GIN index queries on PEPTalk documents."
@@ -99,10 +107,7 @@ def main() -> None:
     filter_dict = {"python_version": args.version}
     filter_json = json.dumps(filter_dict)
 
-    try:
-        asyncio.run(explain_query(filter_json))
-    finally:
-        asyncio.run(dispose_engine())
+    asyncio.run(run(filter_json))
 
 
 if __name__ == "__main__":

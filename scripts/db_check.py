@@ -45,6 +45,7 @@ async def check_database_connection() -> bool:
                 logger.info("Authenticated as user: %s", db_user)
                 logger.info("Database engine: %s", short_version)
             return True
+
     except Exception as exc:
         logger.error("Database connection check failed: %s", type(exc).__name__)
         return False

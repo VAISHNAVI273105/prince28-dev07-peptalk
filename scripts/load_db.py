@@ -196,7 +196,6 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    # Validate that settings has database_url configured without printing it
     settings = get_settings()
     if not settings.database_url:
         logger.error(
@@ -204,19 +203,25 @@ def main() -> None:
         )
         sys.exit(1)
 
-    try:
-        stats = asyncio.run(run_loader(args.file))
-        logger.info(
-            "Loading complete from %s: %d total (%d inserted, %d updated, %d skipped, %d errors)",
-            args.file,
-            stats.total,
-            stats.inserted,
-            stats.updated,
-            stats.skipped,
-            stats.errors,
-        )
-    finally:
-        asyncio.run(dispose_engine())
+    async def run() -> None:
+        try:
+            stats = await run_loader(args.file)
+            logger.info(
+                (
+                    "Loading complete from %s: %d total "
+                    "(%d inserted, %d updated, %d skipped, %d errors)"
+                ),
+                args.file,
+                stats.total,
+                stats.inserted,
+                stats.updated,
+                stats.skipped,
+                stats.errors,
+            )
+        finally:
+            await dispose_engine()
+
+    asyncio.run(run())
 
 
 if __name__ == "__main__":
