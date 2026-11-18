@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import pytest
-from pydantic import ValidationError
+from pydantic import SecretStr, ValidationError
 
 from peptalk.api.deps import get_document_store
 from peptalk.config import Settings
@@ -48,3 +48,17 @@ def test_get_document_store_dependency():
 def test_settings_app_env_is_required():
     with pytest.raises(ValidationError):
         Settings(_env_file=None)
+
+
+def test_settings_database_url_optional():
+    settings = Settings(app_env="local", database_url=None)
+    assert settings.database_url is None
+
+
+def test_settings_database_url_securely_handled():
+    url = "postgresql://localhost:5432/secure_db"
+    settings = Settings(app_env="local", database_url=url)
+    assert isinstance(settings.database_url, SecretStr)
+    assert settings.database_url.get_secret_value() == url
+    assert "secure_db" not in repr(settings.database_url)
+    assert "secure_db" not in repr(settings)
