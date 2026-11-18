@@ -169,3 +169,21 @@ def test_percent_encoded_credentials_and_config_safety():
     escaped_url = converted.replace("%", "%%")
     cfg.set_main_option("sqlalchemy.url", escaped_url)
     assert cfg.get_main_option("sqlalchemy.url") == converted
+
+
+def test_migration_chain_and_metadata_gin_migration():
+    """Verify the second migration extends the initial migration with a GIN index."""
+    from migrations.versions import (
+        c7a18f2d59b4_add_jsonb_gin_index_on_documents_metadata as migration_02,
+    )
+    from migrations.versions import (
+        ed7742f5a38a_create_documents_and_pages_tables as migration_01,
+    )
+
+    assert migration_01.revision == "ed7742f5a38a"  # pragma: allowlist secret
+    assert migration_01.down_revision is None
+
+    assert migration_02.revision == "c7a18f2d59b4"  # pragma: allowlist secret
+    assert migration_02.down_revision == "ed7742f5a38a"  # pragma: allowlist secret
+    assert callable(migration_02.upgrade)
+    assert callable(migration_02.downgrade)

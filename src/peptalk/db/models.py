@@ -9,6 +9,7 @@ from sqlalchemy import (
     CheckConstraint,
     Date,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
@@ -24,6 +25,14 @@ class Document(Base):
     """A documentation source and its searchable metadata."""
 
     __tablename__ = "documents"
+    __table_args__ = (
+        Index(
+            "ix_documents_metadata_gin",
+            "metadata",
+            postgresql_using="gin",
+            postgresql_ops={"metadata": "jsonb_path_ops"},
+        ),
+    )
 
     id: Mapped[str] = mapped_column(String, primary_key=True)
     title: Mapped[str] = mapped_column(String, nullable=False)

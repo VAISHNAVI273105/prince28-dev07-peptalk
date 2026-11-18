@@ -42,6 +42,16 @@ def test_document_metadata_uses_postgresql_jsonb_and_database_name():
     assert column.server_default is not None
 
 
+def test_document_metadata_gin_index():
+    table = Document.__table__
+    index_names = {idx.name for idx in table.indexes}
+    assert "ix_documents_metadata_gin" in index_names
+
+    gin_index = next(idx for idx in table.indexes if idx.name == "ix_documents_metadata_gin")
+    assert gin_index.dialect_options["postgresql"]["using"] == "gin"
+    assert gin_index.dialect_options["postgresql"]["ops"] == {"metadata": "jsonb_path_ops"}
+
+
 def test_page_table_columns_and_composite_primary_key():
     table = Page.__table__
 
