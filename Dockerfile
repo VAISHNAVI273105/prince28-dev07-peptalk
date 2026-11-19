@@ -86,3 +86,8 @@ ENV PATH="/opt/venv/bin:$PATH" \
 
 # Run tests with coverage
 CMD ["pytest", "--cov=peptalk", "--cov-report=term-missing"]
+
+
+# ---------- Stage 4: Final ----------
+FROM runtime AS final
+
