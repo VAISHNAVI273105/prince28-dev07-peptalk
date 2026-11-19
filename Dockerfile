@@ -56,3 +56,33 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
 
 # Start FastAPI
 CMD ["uvicorn", "peptalk.api.main:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000"]
+
+
+# ---------- Stage 3: Test Runner ----------
+FROM builder AS test
+
+# Install development dependencies, including pytest and coverage
+RUN uv sync --frozen
+
+# Copy database migration files
+COPY migrations ./migrations
+COPY alembic.ini ./
+
+# Copy sample data required by tests
+COPY data ./data
+
+# Copy project utility scripts required by tests
+COPY scripts ./scripts
+
+# Copy test suites
+COPY tests ./tests
+
+# Configure test environment
+ENV PATH="/opt/venv/bin:$PATH" \
+    PYTHONPATH="/app/src" \
+    APP_ENV=ci \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+# Run tests with coverage
+CMD ["pytest", "--cov=peptalk", "--cov-report=term-missing"]
