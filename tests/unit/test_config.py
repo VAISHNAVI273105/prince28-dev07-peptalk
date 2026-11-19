@@ -45,7 +45,9 @@ def test_get_document_store_dependency():
     assert store.file_path == Path("data/sample_records.json")
 
 
-def test_settings_app_env_is_required():
+def test_settings_app_env_is_required(monkeypatch):
+    monkeypatch.delenv("APP_ENV", raising=False)
+
     with pytest.raises(ValidationError):
         Settings(_env_file=None)
 
