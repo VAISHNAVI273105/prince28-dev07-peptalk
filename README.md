@@ -2,179 +2,244 @@
 
 **Your Modern Python Documentation Assistant**
 
-PEPTalk is an authoritative Python documentation assistant that helps developers navigate Python version changes, newly introduced features, and language specifications using official Python Enhancement Proposals (PEPs) and Python "What's New" guides.
+PEPTalk is a Python documentation assistant project designed to help developers explore Python Enhancement Proposals (PEPs), Python release notes, and version-specific language changes through structured, authoritative documentation.
+
+It focuses on making Python documentation easier to navigate, especially when developers need to understand when a feature was introduced and which Python versions support it.
 
 ---
 
 ## Project Status
 
-**Day 1 Foundation – Complete (Active Development)**
+**Day 04 – Docker & Test Infrastructure**
 
-Core infrastructure, FastAPI application factory, dependency injection, JSON structured logging, RFC 9457 error contracts, pre-commit quality hooks, and documentation datasets are implemented and verified.
+The project currently includes:
 
----
+- FastAPI application with an application factory.
+- Dependency injection and structured JSON logging.
+- Document storage using PostgreSQL and SQLAlchemy.
+- Database migrations managed with Alembic.
+- Health and readiness endpoints.
+- Dockerized API and database infrastructure.
+- Isolated PostgreSQL test database.
+- Automated unit and integration tests.
 
 ## Who It's For
 
-- **Python Developers & Engineering Teams**: Engineers upgrading legacy codebases from Python 3.9 through Python 3.13 who need fast, definitive answers on syntax changes, deprecated modules, and standard library replacements.
-- **Library Authors & Maintainers**: Developers managing cross-version compatibility matrices who need precise version boundaries for typing enhancements, runtime behaviors, and bytecode changes.
-- **Architects & Tech Leads**: Teams evaluating migration risks, performance trade-offs (such as free-threaded CPython and JIT compilation), and upgrade timelines.
-
----
+- **Python Developers:** Exploring new Python features and version changes.
+- **Library Authors:** Understanding compatibility across Python versions.
+- **Engineering Teams:** Researching documentation during Python upgrades.
+- **Students and Learners:** Finding reliable references for Python concepts.
 
 ## Problem Statement
 
-When upgrading across multiple Python minor versions (such as Python 3.9 to 3.13), developers encounter documentation scattered across dozens of PEPs, release notes, changelogs, and bug tracker threads. General-purpose LLMs frequently hallucinate PEP numbers, confuse release version boundaries (e.g., conflating PEP 604 union syntax with PEP 695 type parameter syntax), and provide inaccurate code examples. PEPTalk solves this by delivering deterministic, version-grounded answers anchored directly in canonical Python documentation.
+Python documentation is distributed across PEPs, release notes, and official documentation pages. Finding the correct source and identifying the Python version in which a feature was introduced can take time.
 
----
+PEPTalk aims to simplify this process by organizing authoritative Python documentation into a structured and searchable system.
 
-## Signature Feature: Python Version Gate
+## Key Project Goals
 
-The **Python Version Gate** is PEPTalk's signature mechanism for cross-version compatibility:
-- **Version Boundaries**: Validates whether a feature, syntax construct, or library function is available in a target Python runtime (3.10, 3.11, 3.12, 3.13).
-- **Migration Guidance**: When querying an unsupported or newly introduced feature, the gate identifies the exact introduction version, migration alternatives, and official deprecation notices.
-- **Canonical Attribution**: Every response links directly to the normative PEP or official "What's New in Python" document.
+- Organize official Python documentation.
+- Associate documentation with relevant Python versions.
+- Provide document retrieval through REST API endpoints.
+- Maintain reliable database storage and migrations.
+- Build a foundation for version-aware documentation assistance.
 
----
+## Official Data Sources
 
-## Hardest Problem & Engineering Story
+PEPTalk references official Python resources:
 
-**Resolving Specification Disambiguation Across Evolving PEPs**
-
-A significant challenge in Python documentation engineering is disambiguating multi-part proposals and overlapping language changes across consecutive minor versions. For example:
-- Pattern matching spans four documents (PEPs 622, 634, 635, and 636), but only PEP 634 serves as the normative specification for Python 3.10.
-- Multithreading changes evolve from per-interpreter GIL (PEP 684 in Python 3.12) to optional free-threading (PEP 703 in Python 3.13).
-
-To eliminate ambiguity, PEPTalk implements a decoupled architecture with:
-1. **Deterministic Document Store**: An indexed, typed repository with strict schemas for PEP status, release versions, and source URLs.
-2. **FastAPI Dependency Injection**: Decoupled store providers ensuring test isolation, swappable backends, and zero global mutable state.
-3. **Strict RFC 9457 Error Handling**: Standardized Problem Details responses for validation errors, missing documents, and runtime exceptions.
-4. **Structured JSON Observability**: Request-correlated logging with millisecond duration tracking to debug and monitor every request end-to-end.
-
----
-
-## Target Metrics
-
-| Metric | Target | Current Status |
-|---|---|---|
-| **Hallucination Rate** | 0% (zero fabricated PEPs or URLs) | 0% (grounded in official sources) |
-| **P95 Latency** | < 200 ms for document queries | < 15 ms local retrieval |
-| **Test Coverage** | 100% passing automated test suite | 21 passing tests |
-| **Error Contract** | 100% RFC 9457 Problem Details | Fully compliant |
-| **Code Quality** | Zero lint, format, or typing errors | Clean Ruff & pre-commit checks |
-
----
-
-## Data Sources
-
-PEPTalk references exclusively official, authoritative Python documentation:
-- **Python Documentation**: https://docs.python.org/3/
-- **Official PEP Repository**: https://peps.python.org/
-- **What's New in Python**: https://docs.python.org/3/whatsnew/
-
----
+- [Python Documentation](https://docs.python.org/3/)
+- [Python Enhancement Proposals](https://peps.python.org/)
+- [What's New in Python](https://docs.python.org/3/whatsnew/)
 
 ## Tech Stack
 
-- **Runtime**: Python 3.12+ (managed with `uv`)
-- **API Framework**: FastAPI 0.115+
-- **Server**: Uvicorn (ASGI)
-- **Settings & Validation**: Pydantic Settings v2
-- **Testing**: Pytest 9.2+ & HTTPX TestClient
-- **Code Quality**: Ruff (linter & formatter)
-- **Git Hooks**: pre-commit (pre-commit-hooks, ruff, detect-secrets)
-
----
+| Category | Technology |
+|---|---|
+| Language | Python 3.12+ |
+| Package Manager | uv |
+| API Framework | FastAPI |
+| ASGI Server | Uvicorn |
+| Validation | Pydantic |
+| Database | PostgreSQL |
+| ORM | SQLAlchemy |
+| Migrations | Alembic |
+| Testing | Pytest |
+| Coverage | pytest-cov |
+| Linting | Ruff |
+| Containers | Docker |
+| Orchestration | Docker Compose |
+| Supporting Service | Redis |
 
 ## Project Structure
 
 ```text
 PEPTalk/
-├── .env.example              # Environment template
-├── .gitignore                # Git ignore patterns
-├── .pre-commit-config.yaml   # Pre-commit hook configuration
-├── pyproject.toml            # Project metadata & tool configuration
-├── README.md                 # Project documentation
-├── uv.lock                   # Deterministic dependency lockfile
+├── .dockerignore
+├── .env.example
+├── .gitignore
+├── .pre-commit-config.yaml
+├── .python-version
+├── Dockerfile
+├── compose.yaml
+├── alembic.ini
+├── pyproject.toml
+├── uv.lock
+├── README.md
+│
 ├── data/
-│   └── sample_records.json   # 22 official Python PEP & What's New records
+│   └── sample_records.json
+│
 ├── docs/
-│   ├── QUESTIONS.md          # 10 core evaluation questions
-│   └── REQUIREMENTS.md       # Functional & non-functional requirements
+│   ├── QUESTIONS.md
+│   └── REQUIREMENTS.md
+│
+├── migrations/
+│   ├── env.py
+│   └── versions/
+│
+├── scripts/
+│   ├── db_check.py
+│   ├── explain.py
+│   └── load_db.py
+│
 ├── src/
 │   └── peptalk/
-│       ├── config.py         # Type-safe settings with Pydantic
-│       ├── logging_setup.py  # Structured JSON log formatter
-│       ├── store.py          # Document store reader
-│       └── api/
-│           ├── deps.py       # FastAPI dependency providers
-│           ├── errors.py     # RFC 9457 error handlers
-│           ├── main.py       # FastAPI application factory
-│           ├── middleware.py # Request ID & timing middleware
-│           └── routes/
-│               ├── documents.py # Document listing & retrieval
-│               └── health.py    # Health & readiness checks
+│       ├── config.py
+│       ├── logging_setup.py
+│       ├── main.py
+│       ├── store.py
+│       ├── api/
+│       │   ├── deps.py
+│       │   ├── errors.py
+│       │   ├── main.py
+│       │   ├── middleware.py
+│       │   └── routes/
+│       │       ├── documents.py
+│       │       └── health.py
+│       └── db/
+│           ├── base.py
+│           ├── models.py
+│           ├── repository.py
+│           └── session.py
+│
 └── tests/
-    ├── conftest.py           # Shared test fixtures & client setup
-    ├── test_api.py           # API integration tests
-    └── test_config.py        # Configuration & dependency injection tests
+    ├── conftest.py
+    ├── unit/
+    └── integration/
 ```
 
----
+## Getting Started
 
-## Local Setup & Run Instructions
+### Prerequisites
 
-### 1. Prerequisites
 - Python 3.12 or newer
-- [`uv`](https://github.com/astral-sh/uv) package manager
+- [uv](https://docs.astral.sh/uv/)
+- Docker Desktop (for containerized setup)
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/VAISHNAVI273105/prince28-dev07-peptalk.git
+cd prince28-dev07-peptalk
+```
 
 ### 2. Install Dependencies
+
 ```bash
-uv sync
+uv sync --dev
 ```
 
-### 3. Environment Configuration
-Copy the template to `.env` if not already present:
-```bash
-cp .env.example .env
+### 3. Configure Environment
+
+Copy the example environment file:
+
+```powershell
+Copy-Item .env.example .env
 ```
 
-Allowed environment settings:
-- `APP_ENV`: `local`, `ci`, or `production`
-- `LOG_LEVEL`: `DEBUG`, `INFO`, `WARNING`, or `ERROR`
-- `DATA_FILE`: Path to documentation JSON file (defaults to `data/sample_records.json`)
+Configure the required local environment values in `.env` if needed. Never commit your `.env` file or expose credentials.
 
-### 4. Run the Application
-Start the development server with hot reload:
+### 4. Run Locally
+
 ```bash
-uv run uvicorn peptalk.api.main:create_app --factory --reload --no-access-log
+uv run uvicorn peptalk.api.main:create_app --factory --reload
 ```
 
-Interactive API documentation will be available at:
+The API will be available at:
+
+- API: http://localhost:8000
 - Swagger UI: http://localhost:8000/docs
 - ReDoc: http://localhost:8000/redoc
+- Health: http://localhost:8000/health
+- Readiness: http://localhost:8000/ready
 
----
+## Run with Docker
 
-## Quality Checks
-
-Run all verification tools locally:
+Start the API, PostgreSQL, and Redis services:
 
 ```bash
-# Run test suite
-uv run pytest
+docker compose up --build
+```
 
-# Check formatting and linting
+Stop the services:
+
+```bash
+docker compose down
+```
+
+## Run Tests
+
+### Local Tests
+
+```bash
+uv run pytest --cov=peptalk --cov-report=term-missing
+```
+
+### Docker Test Runner
+
+Run the isolated test database and test runner:
+
+```bash
+docker compose --profile test run --build --rm test-runner
+```
+
+The test profile uses a separate PostgreSQL test database so integration tests do not run against the application's normal database.
+
+### Latest Verified Test Results
+
+| Metric | Result |
+|---|---:|
+| Tests passed | 111 |
+| Code coverage | 95% |
+| Docker image size | Approximately 71 MB |
+
+These are results from the latest recorded Docker test and image checks; they may change as the project evolves.
+
+## Code Quality Checks
+
+```bash
 uv run ruff check .
 uv run ruff format --check .
-
-# Run pre-commit hooks across all files
 uv run pre-commit run --all-files
 ```
 
+## API Endpoints
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| GET | `/health` | Liveness check |
+| GET | `/ready` | Readiness check |
+| GET | `/v1/documents` | Retrieve documents |
+| GET | `/v1/documents/{document_id}` | Retrieve a specific document |
+
+## Project Information
+
+- **Program:** Prince 2028 – GenAI Engineer Program
+- **Project ID:** DEV-07
+- **Project Name:** PEPTalk
+- **Repository:** [GitHub – PEPTalk](https://github.com/VAISHNAVI273105/prince28-dev07-peptalk)
+
 ---
 
-## Project Info
-
-- **Program**: Prince 2028 - GenAI Engineer Program
-- **Project**: DEV-07 | PEPTalk
+*Built as part of the Prince 2028 GenAI Engineer Program.*
