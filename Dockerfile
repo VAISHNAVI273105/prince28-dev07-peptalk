@@ -1,4 +1,4 @@
-﻿# ---------- Stage 1: Builder ----------
+# ---------- Stage 1: Builder ----------
 FROM python:3.12-slim AS builder
 
 # Install the pinned UV version
@@ -33,6 +33,7 @@ COPY --from=builder --chown=app:app /opt/venv /opt/venv
 # Copy application resources
 COPY --chown=app:app src ./src
 COPY --chown=app:app data ./data
+COPY --chown=app:app scripts ./scripts
 COPY --chown=app:app migrations ./migrations
 COPY --chown=app:app alembic.ini ./
 
@@ -90,4 +91,3 @@ CMD ["pytest", "--cov=peptalk", "--cov-report=term-missing"]
 
 # ---------- Stage 4: Final ----------
 FROM runtime AS final
-
