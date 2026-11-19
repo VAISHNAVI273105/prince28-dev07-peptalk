@@ -81,7 +81,8 @@ PEPTalk/
 ├── .pre-commit-config.yaml
 ├── .python-version
 ├── Dockerfile
-├── compose.yaml
+├── docker-compose.yml
+├── Makefile
 ├── alembic.ini
 ├── pyproject.toml
 ├── uv.lock
@@ -173,6 +174,32 @@ The API will be available at:
 - ReDoc: http://localhost:8000/redoc
 - Health: http://localhost:8000/health
 - Readiness: http://localhost:8000/ready
+
+## Run locally in one command
+
+Start the entire PEPTalk stack (PostgreSQL with pgvector, Redis, migrations, sample data loading, and FastAPI application) in the background with a single command:
+
+```bash
+docker compose up --build -d
+```
+
+The stack automatically:
+1. Boots `pgvector/pgvector:pg17` and initializes databases (`peptalk` and `peptalk_test`).
+2. Boots `redis:7-alpine`.
+3. Runs the `migrate` service (`peptalk:dev`) to apply Alembic migrations and idempotently load 20 sample records into PostgreSQL.
+4. Boots the `api` service (`peptalk:dev`) as non-root user `app` (UID 10001) once database migrations complete and services are healthy.
+
+Access the running application:
+- Interactive API Docs (Swagger): [http://localhost:8000/docs](http://localhost:8000/docs)
+- Alternative Docs (ReDoc): [http://localhost:8000/redoc](http://localhost:8000/redoc)
+- Liveness Probe: [http://localhost:8000/health](http://localhost:8000/health)
+- Readiness Probe: [http://localhost:8000/ready](http://localhost:8000/ready)
+- Documents Collection: [http://localhost:8000/v1/documents](http://localhost:8000/v1/documents)
+
+To stop the services:
+```bash
+docker compose down
+```
 
 ## Run with Docker
 
