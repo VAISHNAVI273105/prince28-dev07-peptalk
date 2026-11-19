@@ -54,6 +54,7 @@ test = "pytest"
 test-unit = "pytest tests/unit"
 test-integration = "pytest tests/integration"
 test-cov = "pytest --cov=peptalk --cov-report=term-missing"
+cov = "pytest --cov=peptalk --cov-report=term-missing"
 lint = "ruff check ."
 format = "ruff format ."
 check = ["lint", "test"]
