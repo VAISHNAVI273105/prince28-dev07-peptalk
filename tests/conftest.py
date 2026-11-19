@@ -1,5 +1,10 @@
+import os
+
 import pytest
 from fastapi.testclient import TestClient
+
+# Ensure safe default environment for tests in clean clones / CI
+os.environ.setdefault("APP_ENV", "ci")
 
 from peptalk.api.deps import check_database_readiness, get_document_repository
 from peptalk.api.main import create_app

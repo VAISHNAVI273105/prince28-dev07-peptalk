@@ -218,27 +218,5 @@
     "created": "2024-01-18",
     "source_url": "https://peps.python.org/pep-0744/",
     "summary": "Introduces an experimental copy-and-patch Just-In-Time compiler architecture to accelerate Python execution."
-  },
-  {
-    "id": "pep-0667",
-    "pep_number": 667,
-    "title": "Consistent Views of Variable Names and Values",
-    "status": "Final",
-    "type": "PEP",
-    "python_version": "3.13",
-    "created": "2022-01-05",
-    "source_url": "https://peps.python.org/pep-0667/",
-    "summary": "Provides consistent, defined semantics for accessing local variables and frame introspection across scopes."
-  },
-  {
-    "id": "whats-new-3-13",
-    "pep_number": null,
-    "title": "What's New In Python 3.13",
-    "status": "Final",
-    "type": "What's New",
-    "python_version": "3.13",
-    "created": "2024-10-07",
-    "source_url": "https://docs.python.org/3.13/whatsnew/3.13.html",
-    "summary": "Describes Python 3.13 changes including an improved interactive REPL with multiline editing, experimental free-threading, and JIT compiler."
   }
 ]

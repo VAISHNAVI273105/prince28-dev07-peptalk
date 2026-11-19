@@ -385,5 +385,134 @@ The following Day 03 PostgreSQL implementation and verification tasks have been 
 - Ruff lint check passed.
 - Ruff format check passed.
 - Day 03 PostgreSQL implementation and bug-fix changes were merged into `main` through GitHub pull requests.
+---
+
+## 10. Day 01 – Docker Image & Build Cache Verification
+
+### Docker Image Build
+
+- Image name: `peptalk:dev`
+- Base image: `python:3.12-slim`
+- Build tool: Docker BuildKit
+- Dependency manager: UV `0.13.8`
+- Initial full build time: 57.9 seconds
+- Runtime-specific build time: 10.2 seconds
+- Image content size: 162 MB
+- Image disk usage: 647 MB
+
+### Non-root User Verification
+
+Command:
+
+```powershell
+docker run --rm peptalk:dev id
+```
+
+Actual output:
+
+```text
+uid=10001(app) gid=10001(app) groups=10001(app)
+```
+
+Result: Successfully verified that the runtime container runs as the dedicated non-root `app` user.
+
+### Docker Build Cache Verification
+
+A temporary docstring change was made in `src/peptalk/api/routes/health.py`, followed by a runtime image rebuild.
+
+- Cache verification rebuild time: 18.8 seconds.
+- Dependency installation layer (`uv sync --frozen --no-dev --no-install-project`): CACHED.
+- Source code copy layer: Rebuilt.
+- Final runtime image: Rebuilt.
+- Original health-check docstring was restored after verification.
+
+Result: Docker dependency-layer caching successfully verified.
+
+
 
 **Final Note:** PostgreSQL migrations, Neon database connectivity, idempotent data loading, JSONB GIN index verification, and the project test suite have been successfully verified. Documentation evidence is recorded above.
+
+---
+
+## 11. Day 04 – Docker Compose, Multi-Stage Builds & Test Infrastructure Evidence
+
+### Multi-Stage Dockerfile Verification
+
+The multi-stage `Dockerfile` is structured into four distinct stages:
+1. `builder`: Compiles dependencies using UV `0.13.8` with pinned Python 3.12-slim base image.
+2. `runtime`: Minimal production runtime with non-root user `app` (UID 10001), virtual environment, and production entrypoint.
+3. `test`: Includes development dependencies, test suites, and coverage reporting tools.
+4. `final`: Final stage aliased as `FROM runtime AS final` to ensure default image builds target the production runtime.
+
+Actual Image Measurements (`docker images peptalk:dev`):
+- Content size: **74.6 MB**
+- Disk usage: **318 MB**
+
+Non-Root User Verification (`docker run --rm peptalk:dev id`):
+```text
+uid=10001(app) gid=10001(app) groups=10001(app)
+```
+
+Dependency Layer Caching Verification:
+- First-build time with dependency download: ~54.1 seconds.
+- Rebuild time with cached dependencies: **4.80 seconds**.
+- Dependency layer (`uv sync --frozen --no-dev --no-install-project`): `CACHED`.
+
+### Docker Compose Stack Verification
+
+Docker Compose is defined in `docker-compose.yml` with four coordinated services:
+- **db**: `pgvector/pgvector:pg17` with health check via `pg_isready -U peptalk -d peptalk` and initialization SQL mounted from `docker/initdb/01-create-test-db.sql`.
+- **redis**: `redis:7-alpine` with health check via `redis-cli ping`.
+- **migrate**: `peptalk:dev` running `alembic upgrade head && python scripts/load_db.py`, depending on `db: service_healthy`.
+- **api**: `peptalk:dev` exposing port 8000, depending on `db: service_healthy`, `redis: service_healthy`, and `migrate: service_completed_successfully`.
+
+Live Status (`docker compose ps -a`):
+```text
+NAME              IMAGE                    COMMAND                  SERVICE   STATUS                      PORTS
+peptalk-api       peptalk:dev              "uvicorn peptalk.api…"   api       Up (healthy)                0.0.0.0:8000->8000/tcp
+peptalk-db        pgvector/pgvector:pg17   "docker-entrypoint.s…"   db        Up (healthy)                5432/tcp
+peptalk-migrate   peptalk:dev              "sh -c 'alembic upgr…"   migrate   Exited (0)
+peptalk-redis     redis:7-alpine           "docker-entrypoint.s…"   redis     Up (healthy)                6379/tcp
+```
+
+Migration and Sample-Data Loading:
+- Initial run: `20 total (20 inserted, 0 updated, 0 skipped, 0 errors)`.
+- Subsequent run on restart (`docker compose down` followed by `docker compose up -d`): `20 total (0 inserted, 0 updated, 20 skipped, 0 errors)`.
+- Idempotency verified: zero duplicate records created (20 unique records).
+
+Live Endpoint Verification:
+- `/health`: `200 OK` -> `{"status": "healthy"}`
+- `/ready`: `200 OK` -> `{"status": "ready"}`
+- `/docs`: `200 OK` (Swagger UI accessible)
+- `/v1/documents`: `200 OK` (retrieves all 20 canonical documents)
+
+Database Resilience Verification:
+- Stopped database container (`docker compose stop db`):
+  - `/health` remained healthy: `200 OK` (`{"status": "healthy"}`).
+  - `/ready` reported failure: `503 Service Unavailable` (`{"status": 503, "detail": "Database connectivity check failed."}`).
+- Restarted database container (`docker compose start db`):
+  - `/ready` recovered: `200 OK` (`{"status": "ready"}`).
+
+### Testing & Code Quality Verification
+
+Test Suites:
+- **Unit Tests** (`tests/unit/`): **109 passed** in 1.47s (95% statement coverage).
+- **Integration Tests** (`tests/integration/`): **7 passed** in 0.82s against live PostgreSQL database (`peptalk_test`).
+  1. `test_integration_database_migration_and_tables`
+  2. `test_integration_repository_insert_and_get`
+  3. `test_integration_repository_jsonb_filter`
+  4. `test_integration_repository_pagination`
+  5. `test_integration_loader_first_run` (verifies 20 inserted)
+  6. `test_integration_loader_second_run_idempotent` (verifies 0 inserted, 20 skipped)
+  7. `test_integration_api_readiness_probe`
+- When `TEST_DATABASE_URL` is unset: all 7 integration tests skip safely.
+- Combined Suite: **116 passed**, **92% total coverage**.
+
+Poe the Poet Tasks:
+- `test`, `test-unit`, `test-integration`, `test-cov`, `lint`, `format`, `check`, `up`, `down` configured in `pyproject.toml`.
+
+Makefile:
+- Formatted with genuine TAB indentation supporting `build`, `up`, `down`, `logs`, `test`, `test-unit`, `test-integration`, `lint`, `format`, `clean`.
+
+Pre-commit Verification:
+- All hooks passed: trailing whitespace, end of files, yaml check, ruff lint, ruff format, detect-secrets.

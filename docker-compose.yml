@@ -1,0 +1,89 @@
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    container_name: peptalk-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: peptalk
+      POSTGRES_USER: peptalk
+      POSTGRES_PASSWORD: peptalk_dev_password  # pragma: allowlist secret
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U peptalk -d peptalk"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: peptalk-redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  migrate:
+    build:
+      context: .
+      target: runtime
+    image: peptalk:dev
+    container_name: peptalk-migrate
+    restart: "no"
+    environment:
+      APP_ENV: production
+      DATABASE_URL: postgresql+asyncpg://peptalk:peptalk_dev_password@db:5432/peptalk  # pragma: allowlist secret
+      DATA_FILE: /app/data/sample_records.json
+    depends_on:
+      db:
+        condition: service_healthy
+    command:
+      - sh
+      - -c
+      - alembic upgrade head && python scripts/load_db.py
+
+  api:
+    build:
+      context: .
+      target: runtime
+    image: peptalk:dev
+    container_name: peptalk-api
+    restart: unless-stopped
+    environment:
+      APP_ENV: production
+      LOG_LEVEL: INFO
+      DATABASE_URL: postgresql+asyncpg://peptalk:peptalk_dev_password@db:5432/peptalk  # pragma: allowlist secret
+      DATA_FILE: /app/data/sample_records.json
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    command:
+      - uvicorn
+      - peptalk.api.main:create_app
+      - --factory
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+
+volumes:
+  postgres_data:
