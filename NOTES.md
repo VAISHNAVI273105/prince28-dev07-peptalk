@@ -385,5 +385,49 @@ The following Day 03 PostgreSQL implementation and verification tasks have been 
 - Ruff lint check passed.
 - Ruff format check passed.
 - Day 03 PostgreSQL implementation and bug-fix changes were merged into `main` through GitHub pull requests.
+---
+
+## 10. Day 01 – Docker Image & Build Cache Verification
+
+### Docker Image Build
+
+- Image name: `peptalk:dev`
+- Base image: `python:3.12-slim`
+- Build tool: Docker BuildKit
+- Dependency manager: UV `0.13.8`
+- Initial full build time: 57.9 seconds
+- Runtime-specific build time: 10.2 seconds
+- Image content size: 162 MB
+- Image disk usage: 647 MB
+
+### Non-root User Verification
+
+Command:
+
+```powershell
+docker run --rm peptalk:dev id
+```
+
+Actual output:
+
+```text
+uid=10001(app) gid=10001(app) groups=10001(app)
+```
+
+Result: Successfully verified that the runtime container runs as the dedicated non-root `app` user.
+
+### Docker Build Cache Verification
+
+A temporary docstring change was made in `src/peptalk/api/routes/health.py`, followed by a runtime image rebuild.
+
+- Cache verification rebuild time: 18.8 seconds.
+- Dependency installation layer (`uv sync --frozen --no-dev --no-install-project`): CACHED.
+- Source code copy layer: Rebuilt.
+- Final runtime image: Rebuilt.
+- Original health-check docstring was restored after verification.
+
+Result: Docker dependency-layer caching successfully verified.
+
+
 
 **Final Note:** PostgreSQL migrations, Neon database connectivity, idempotent data loading, JSONB GIN index verification, and the project test suite have been successfully verified. Documentation evidence is recorded above.
