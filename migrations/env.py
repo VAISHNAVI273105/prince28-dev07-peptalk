@@ -42,6 +42,23 @@ def load_environment(dotenv_path: Path | str | None = None) -> None:
     load_dotenv(dotenv_path=path, override=False)
 
 
+def verify_migration_target_metadata(metadata: object = None) -> list[str]:
+    """Verify that Alembic's target_metadata contains required application tables.
+
+    Guards against running migrations with unregistered models or empty metadata.
+    """
+    meta = metadata if metadata is not None else target_metadata
+    required_tables = {"documents", "pages"}
+    tables = getattr(meta, "tables", {})
+    registered_tables = set(tables.keys())
+    missing = required_tables - registered_tables
+    if missing:
+        raise RuntimeError(
+            f"Migration target_metadata missing expected table(s): {', '.join(sorted(missing))}"
+        )
+    return sorted(registered_tables)
+
+
 def get_sync_database_url(url: str | None = None) -> str:
     """Read and convert DATABASE_URL to synchronous postgresql+psycopg format for Alembic.
 
@@ -79,6 +96,7 @@ def run_migrations_offline() -> None:
     Calls to context.execute() here emit the given string to the
     script output.
     """
+    verify_migration_target_metadata(target_metadata)
     url = get_sync_database_url()
     if config is not None:
         config.set_main_option("sqlalchemy.url", url.replace("%", "%%"))
@@ -101,6 +119,7 @@ def run_migrations_online() -> None:
     In this scenario we need to create an Engine
     and associate a connection with the context.
     """
+    verify_migration_target_metadata(target_metadata)
     url = get_sync_database_url()
     if config is not None:
         config.set_main_option("sqlalchemy.url", url.replace("%", "%%"))

@@ -191,3 +191,19 @@ def test_migration_chain_and_metadata_gin_migration():
     assert migration_02.down_revision == "ed7742f5a38a"  # pragma: allowlist secret
     assert callable(migration_02.upgrade)
     assert callable(migration_02.downgrade)
+
+
+def test_verify_migration_target_metadata_success():
+    """Verify target metadata contains required tables documents and pages."""
+    tables = migration_env.verify_migration_target_metadata()
+    assert "documents" in tables
+    assert "pages" in tables
+
+
+def test_verify_migration_target_metadata_missing_tables():
+    """Verify verify_migration_target_metadata raises RuntimeError when tables are missing."""
+    class FakeMetadata:
+        tables = {"documents": None}
+
+    with pytest.raises(RuntimeError, match="missing expected table.*pages"):
+        migration_env.verify_migration_target_metadata(FakeMetadata())
