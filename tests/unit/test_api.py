@@ -1,7 +1,27 @@
 def test_health_endpoint(client):
     response = client.get("/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "healthy"}
+    data = response.json()
+    assert data["status"] == "healthy"
+    assert data["app"] == "peptalk"
+    assert data["version"] == "dev"
+    assert "env" in data
+
+
+def test_health_endpoint_with_custom_git_sha(monkeypatch, client):
+    """Verify /health returns the injected GIT_SHA value."""
+    from peptalk.config import get_settings
+
+    monkeypatch.setenv("GIT_SHA", "commit-sha-abc1234")
+    get_settings.cache_clear()
+    try:
+        response = client.get("/health")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "healthy"
+        assert data["version"] == "commit-sha-abc1234"
+    finally:
+        get_settings.cache_clear()
 
 
 def test_readiness_endpoint(client):
@@ -148,7 +168,8 @@ def test_health_remains_healthy_independent_of_database(client):
     try:
         response = client.get("/health")
         assert response.status_code == 200
-        assert response.json() == {"status": "healthy"}
+        assert response.json()["status"] == "healthy"
+        assert response.json()["version"] == "dev"
     finally:
         client.app.dependency_overrides.pop(check_database_readiness, None)
 
