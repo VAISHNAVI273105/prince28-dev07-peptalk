@@ -60,6 +60,21 @@ def format_document_citation(doc: dict[str, Any]) -> dict[str, str]:
     }
 
 
+SUPPORTED_PYTHON_VERSIONS: frozenset[str] = frozenset(
+    {"3.8", "3.9", "3.10", "3.11", "3.12", "3.13"}
+)
+
+
+def is_supported_python_version(version: str) -> bool:
+    """Check if the provided string is an active or supported Python minor version.
+
+    Supports CPython versions 3.8 through 3.13.
+    """
+    if not version or not isinstance(version, str):
+        return False
+    return version.strip() in SUPPORTED_PYTHON_VERSIONS
+
+
 class DocumentRepositoryProtocol(Protocol):
     """Protocol defining the document repository interface."""
 

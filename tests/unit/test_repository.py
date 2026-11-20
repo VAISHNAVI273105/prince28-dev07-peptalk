@@ -12,6 +12,7 @@ from peptalk.db.repository import (
     DocumentStoreAdapter,
     document_to_dict,
     format_document_citation,
+    is_supported_python_version,
 )
 from peptalk.store import DocumentStore
 
@@ -90,6 +91,18 @@ def test_format_document_citation():
     assert citation_gen["markdown_link"] == (
         "[What's New In Python 3.12](https://docs.python.org/3.12/whatsnew/3.12.html)"
     )
+
+
+def test_is_supported_python_version():
+    """Verify is_supported_python_version accurately validates supported Python versions."""
+    assert is_supported_python_version("3.8") is True
+    assert is_supported_python_version("3.10") is True
+    assert is_supported_python_version("3.12") is True
+    assert is_supported_python_version("3.13") is True
+    assert is_supported_python_version("2.7") is False
+    assert is_supported_python_version("3.6") is False
+    assert is_supported_python_version("invalid") is False
+    assert is_supported_python_version("") is False
 
 
 async def test_repository_get_by_id_found():
