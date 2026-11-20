@@ -41,13 +41,19 @@ Issues = "https://github.com/VAISHNAVI273105/prince28-dev07-peptalk/issues"
 
 [dependency-groups]
 dev = [
+    { include-group = "test" },
+    { include-group = "lint" },
+    "poethepoet>=0.31.0",
+]
+test = [
     "pytest",
     "httpx",
-    "ruff",
-    "pre-commit",
     "pytest-cov>=7.1.0",
     "pytest-asyncio>=0.24.0",
-    "poethepoet>=0.31.0",
+]
+lint = [
+    "ruff",
+    "pre-commit",
 ]
 
 [tool.pytest.ini_options]
