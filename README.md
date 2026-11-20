@@ -1,5 +1,11 @@
 # PEPTalk
 
+[![CI](https://github.com/VAISHNAVI273105/prince28-dev07-peptalk/actions/workflows/ci.yml/badge.svg)](https://github.com/VAISHNAVI273105/prince28-dev07-peptalk/actions/workflows/ci.yml)
+[![Live](https://img.shields.io/website?url=https%3A%2F%2Fpeptalk-l60c.onrender.com%2Fhealth&label=live)](https://peptalk-l60c.onrender.com/docs)
+[![Uptime (30 days)](https://img.shields.io/uptimerobot/ratio/YOUR-MONITOR-KEY)](https://peptalk-l60c.onrender.com/health)
+
+**Live:** https://peptalk-l60c.onrender.com · [API docs](https://peptalk-l60c.onrender.com/docs) · [health](https://peptalk-l60c.onrender.com/health)
+
 **Your Modern Python Documentation Assistant**
 
 PEPTalk is a Python documentation assistant project designed to help developers explore Python Enhancement Proposals (PEPs), Python release notes, and version-specific language changes through structured, authoritative documentation.
@@ -10,7 +16,7 @@ It focuses on making Python documentation easier to navigate, especially when de
 
 ## Project Status
 
-**Day 04 – Docker & Test Infrastructure**
+**Status:** Week 1 complete · live at https://peptalk-l60c.onrender.com
 
 The project currently includes:
 
