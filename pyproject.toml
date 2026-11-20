@@ -11,6 +11,19 @@ version = "0.1.0"
 description = "Answers modern Python questions using official PEPs and Python What's New documentation."
 readme = "README.md"
 requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "PEPTalk Engineering Team" }]
+keywords = ["python", "pep", "cpython", "fastapi", "documentation", "rag"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Framework :: FastAPI",
+    "Topic :: Software Development :: Documentation",
+]
+
 dependencies = [
     "fastapi",
     "uvicorn[standard]",
@@ -21,6 +34,10 @@ dependencies = [
     "psycopg[binary]>=3.3.9",
     "python-dotenv>=1.2.4",
 ]
+
+[project.urls]
+Repository = "https://github.com/VAISHNAVI273105/prince28-dev07-peptalk"
+Issues = "https://github.com/VAISHNAVI273105/prince28-dev07-peptalk/issues"
 
 [dependency-groups]
 dev = [
