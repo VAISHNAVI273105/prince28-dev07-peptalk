@@ -56,11 +56,17 @@ def validate_filters(
             )
         normalized_status = formatted if formatted in VALID_STATUSES else status.strip()
 
-    if pep_number is not None and pep_number <= 0:
-        raise HTTPException(
-            status_code=400,
-            detail="pep_number filter must be a positive integer greater than 0.",
-        )
+    if pep_number is not None:
+        if pep_number <= 0:
+            raise HTTPException(
+                status_code=400,
+                detail="pep_number filter must be a positive integer greater than 0.",
+            )
+        if pep_number > 99999:
+            raise HTTPException(
+                status_code=400,
+                detail="pep_number filter exceeds maximum allowable value (99999).",
+            )
 
     return normalized_type, python_version, normalized_status, pep_number
 
@@ -124,7 +130,13 @@ async def get_document(
     document_id: str,
     repo: Annotated[DocumentRepositoryProtocol, Depends(get_document_repository)],
 ) -> dict[str, Any]:
-    document = await repo.get_by_id(document_id)
+    cleaned_id = document_id.strip()
+    if not cleaned_id:
+        raise HTTPException(
+            status_code=400,
+            detail="document_id cannot be blank or whitespace.",
+        )
+    document = await repo.get_by_id(cleaned_id)
 
     if document is None:
         raise HTTPException(
