@@ -38,6 +38,28 @@ def document_to_dict(doc: Document) -> dict[str, Any]:
     return data
 
 
+def format_document_citation(doc: dict[str, Any]) -> dict[str, str]:
+    """Format standard citation metadata and markdown reference from document dictionary.
+
+    Returns a dict with 'id', 'title', 'url', 'markdown_link', and 'reference'.
+    """
+    doc_id = str(doc.get("id", "unknown"))
+    title = str(doc.get("title", doc_id))
+    url = str(doc.get("source_url", ""))
+    pep_num = doc.get("pep_number")
+
+    label = f"PEP {pep_num}: {title}" if pep_num is not None else title
+    md_link = f"[{label}]({url})" if url else label
+
+    return {
+        "id": doc_id,
+        "title": title,
+        "url": url,
+        "markdown_link": md_link,
+        "reference": label,
+    }
+
+
 class DocumentRepositoryProtocol(Protocol):
     """Protocol defining the document repository interface."""
 

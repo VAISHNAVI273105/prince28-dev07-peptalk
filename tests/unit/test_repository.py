@@ -7,7 +7,12 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from peptalk.db.models import Document, Page
-from peptalk.db.repository import DocumentRepository, DocumentStoreAdapter, document_to_dict
+from peptalk.db.repository import (
+    DocumentRepository,
+    DocumentStoreAdapter,
+    document_to_dict,
+    format_document_citation,
+)
 from peptalk.store import DocumentStore
 
 pytestmark = pytest.mark.anyio
@@ -60,6 +65,31 @@ def test_document_to_dict_empty_pages_resilient_summary():
     serialized = document_to_dict(doc)
     assert serialized["id"] == "pep-0001"
     assert serialized["summary"] == ""
+
+
+def test_format_document_citation():
+    """Verify format_document_citation builds markdown links and citation references."""
+    pep_doc = {
+        "id": "pep-0634",
+        "pep_number": 634,
+        "title": "Pattern Matching",
+        "source_url": "https://peps.python.org/pep-0634/",
+    }
+    citation = format_document_citation(pep_doc)
+    assert citation["id"] == "pep-0634"
+    assert citation["reference"] == "PEP 634: Pattern Matching"
+    assert citation["markdown_link"] == "[PEP 634: Pattern Matching](https://peps.python.org/pep-0634/)"
+
+    general_doc = {
+        "id": "whats-new-312",
+        "title": "What's New In Python 3.12",
+        "source_url": "https://docs.python.org/3.12/whatsnew/3.12.html",
+    }
+    citation_gen = format_document_citation(general_doc)
+    assert citation_gen["reference"] == "What's New In Python 3.12"
+    assert citation_gen["markdown_link"] == (
+        "[What's New In Python 3.12](https://docs.python.org/3.12/whatsnew/3.12.html)"
+    )
 
 
 async def test_repository_get_by_id_found():
