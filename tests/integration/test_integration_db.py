@@ -56,8 +56,8 @@ def _get_admin_sync_url(test_url: str, default_db: str = "postgres") -> str:
     )
 
 
-@pytest.fixture(scope="session")
-def live_db_setup():
+@pytest.fixture
+async def live_db_setup():
     """Create a fresh database, apply Alembic migrations, and tear down after tests."""
     raw_url = os.getenv("TEST_DATABASE_URL")
     if not raw_url:
@@ -138,15 +138,8 @@ def live_db_setup():
         "created_new_db": created_new_db,
     }
 
-    # Teardown
-    import asyncio
-
-    try:
-        loop = asyncio.new_event_loop()
-        loop.run_until_complete(engine.dispose())
-        loop.close()
-    except Exception:
-        pass
+        # Teardown
+    await engine.dispose()
 
     if created_new_db:
         admin_engine = None
