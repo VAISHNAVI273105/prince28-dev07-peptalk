@@ -55,6 +55,12 @@ class Document(Base):
         passive_deletes=True,
     )
 
+    def __repr__(self) -> str:
+        return f"<Document id={self.id!r} title={self.title!r} type={self.doc_type!r}>"
+
+    def __str__(self) -> str:
+        return f"{self.id}: {self.title}"
+
 
 class Page(Base):
     """A page of text belonging to a documentation source."""
@@ -70,3 +76,9 @@ class Page(Base):
     text: Mapped[str] = mapped_column(Text, nullable=False)
 
     document: Mapped[Document] = relationship(back_populates="pages")
+
+    def __repr__(self) -> str:
+        return f"<Page doc_id={self.doc_id!r} page_no={self.page_no}>"
+
+    def __str__(self) -> str:
+        return f"{self.doc_id}#p{self.page_no}"
