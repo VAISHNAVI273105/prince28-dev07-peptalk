@@ -208,6 +208,7 @@ async def load_documents_from_json(
         raise ValueError(f"Expected JSON list in {path}, got {type(records).__name__}")
 
     stats = LoadStats(total=len(records))
+    seen_records: dict[str, str] = {}
 
     for record in records:
         if not isinstance(record, dict) or "id" not in record or not record.get("id"):
@@ -216,6 +217,14 @@ async def load_documents_from_json(
             if fail_fast:
                 raise ValueError("Record is missing required 'id' attribute")
             continue
+
+        doc_id = str(record["id"])
+        canonical_sha = compute_canonical_sha256(record)
+        if doc_id in seen_records and seen_records[doc_id] == canonical_sha:
+            stats.skipped += 1
+            logger.debug("Duplicate record '%s' skipped in-memory during batch loading", doc_id)
+            continue
+        seen_records[doc_id] = canonical_sha
 
         try:
             status = await load_record(session, record)

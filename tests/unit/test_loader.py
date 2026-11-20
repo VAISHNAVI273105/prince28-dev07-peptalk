@@ -242,3 +242,30 @@ def test_validate_python_version():
     assert validate_python_version(None) is None
     assert validate_python_version("") is None
     assert validate_python_version("3.10.4") == "3.10.4"
+
+
+async def test_load_documents_in_memory_deduplication(tmp_path: Path):
+    """Verify identical records within the same batch are deduplicated in-memory."""
+    test_file = tmp_path / "records_with_duplicates.json"
+    record = {
+        "id": "pep-0634",
+        "title": "Pattern Matching",
+        "source_url": "https://peps.python.org/pep-0634/",
+        "type": "PEP",
+        "summary": "Match statement syntax.",
+    }
+    # Two identical records in the same batch
+    records = [record, record.copy()]
+    test_file.write_text(json.dumps(records), encoding="utf-8")
+
+    mock_session = AsyncMock(spec=AsyncSession)
+    mock_session.get.return_value = None
+
+    stats = await load_documents_from_json(test_file, mock_session)
+
+    assert stats.total == 2
+    assert stats.inserted == 1
+    assert stats.skipped == 1
+    assert stats.errors == 0
+    # mock_session.get should only be called once because the second was deduplicated in-memory
+    assert mock_session.get.await_count == 1
