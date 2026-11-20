@@ -64,3 +64,13 @@ def test_settings_database_url_securely_handled():
     assert settings.database_url.get_secret_value() == url
     assert "secure_db" not in repr(settings.database_url)
     assert "secure_db" not in repr(settings)
+
+
+def test_settings_git_sha_default_and_override(monkeypatch):
+    """Verify default git_sha is 'dev' and environment variable overrides it."""
+    settings = Settings(app_env="local")
+    assert settings.git_sha == "dev"
+
+    monkeypatch.setenv("GIT_SHA", "sha-abcdef123456")
+    custom_settings = Settings(app_env="local")
+    assert custom_settings.git_sha == "sha-abcdef123456"

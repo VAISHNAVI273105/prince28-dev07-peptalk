@@ -1,16 +1,24 @@
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
 from peptalk.api.deps import check_database_readiness
+from peptalk.config import Settings, get_settings
 
 router = APIRouter()
 
 
 @router.get("/health")
-async def health_check() -> dict[str, str]:
-    """Liveness probe: verifies process health without database dependencies."""
-    return {"status": "healthy"}
+async def health_check(
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> dict[str, Any]:
+    """Liveness probe: verifies process health and returns version metadata."""
+    return {
+        "status": "healthy",
+        "app": settings.app_name,
+        "env": settings.app_env,
+        "version": settings.git_sha,
+    }
 
 
 @router.get("/ready")

@@ -17,4 +17,8 @@ def test_main_health_endpoint():
     client = TestClient(app)
     response = client.get("/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "healthy"}
+    data = response.json()
+    assert data["status"] == "healthy"
+    assert data["app"] == "peptalk"
+    assert data["version"] == "dev"
+    assert "env" in data

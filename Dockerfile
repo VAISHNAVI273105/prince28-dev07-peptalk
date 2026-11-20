@@ -43,6 +43,8 @@ COPY --chown=app:app scripts ./scripts
 COPY --chown=app:app migrations ./migrations
 COPY --chown=app:app alembic.ini ./
 
+ARG GIT_SHA="dev"
+
 # Runtime configuration
 ENV PATH="/opt/venv/bin:$PATH" \
     PYTHONPATH="/app/src" \
@@ -50,7 +52,8 @@ ENV PATH="/opt/venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
     APP_ENV=production \
     LOG_LEVEL=INFO \
-    DATA_FILE=/app/data/sample_records.json
+    DATA_FILE=/app/data/sample_records.json \
+    GIT_SHA=${GIT_SHA}
 
 # Run as a non-root user
 USER app

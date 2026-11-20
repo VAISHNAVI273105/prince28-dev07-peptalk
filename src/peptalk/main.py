@@ -1,4 +1,8 @@
-from fastapi import FastAPI
+from typing import Any
+
+from fastapi import Depends, FastAPI
+
+from peptalk.config import Settings, get_settings
 
 app = FastAPI(
     title="PEPTalk",
@@ -16,7 +20,12 @@ async def home():
 
 
 @app.get("/health")
-async def health_check():
+async def health_check(
+    settings: Settings = Depends(get_settings),
+) -> dict[str, Any]:
     return {
         "status": "healthy",
+        "app": settings.app_name,
+        "env": settings.app_env,
+        "version": settings.git_sha,
     }
