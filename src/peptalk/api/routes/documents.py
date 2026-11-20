@@ -64,7 +64,15 @@ def validate_filters(
     return normalized_type, python_version, normalized_status, pep_number
 
 
-@router.get("")
+@router.get(
+    "",
+    summary="List Python documentation records",
+    description=(
+        "Retrieve paginated Python PEP and What's New records with optional filtering "
+        "by document type, Python language version, PEP status, and PEP number."
+    ),
+    response_description="A paginated list of matching Python documentation items.",
+)
 async def list_documents(
     repo: Annotated[DocumentRepositoryProtocol, Depends(get_document_repository)],
     limit: int = Query(default=20, ge=1, le=100),
@@ -100,7 +108,15 @@ async def list_documents(
     }
 
 
-@router.get("/{document_id}")
+@router.get(
+    "/{document_id}",
+    summary="Get document by ID",
+    description=(
+        "Retrieve complete metadata, publication date, source URL, and first-page text summary "
+        "for a specific canonical Python document."
+    ),
+    response_description="Detailed document metadata and text content.",
+)
 async def get_document(
     document_id: str,
     repo: Annotated[DocumentRepositoryProtocol, Depends(get_document_repository)],

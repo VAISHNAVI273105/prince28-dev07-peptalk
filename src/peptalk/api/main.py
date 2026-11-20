@@ -14,10 +14,31 @@ def create_app() -> FastAPI:
     settings = get_settings()
     setup_logging(settings.log_level)
 
+    openapi_tags = [
+        {
+            "name": "health",
+            "description": "Liveness and readiness probes for infrastructure monitoring.",
+        },
+        {
+            "name": "documents",
+            "description": (
+                "Operations for querying, filtering, and retrieving Python PEP and release records."
+            ),
+        },
+    ]
+
     app = FastAPI(
         title="PEPTalk",
         description="Python documentation assistant using official PEPs and What's New pages.",
         version="0.1.0",
+        openapi_tags=openapi_tags,
+        contact={
+            "name": "PEPTalk Engineering Team",
+            "url": "https://github.com/VAISHNAVI273105/prince28-dev07-peptalk",
+        },
+        license_info={
+            "name": "MIT",
+        },
     )
 
     app.add_middleware(RequestContextMiddleware)
