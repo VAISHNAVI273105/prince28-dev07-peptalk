@@ -7,6 +7,7 @@ import asyncio
 import hashlib
 import json
 import logging
+import re
 import sys
 from dataclasses import dataclass
 from datetime import date
@@ -46,6 +47,23 @@ def validate_pep_status(status: str | None) -> str | None:
         return canonical
     logger.warning("Unrecognized PEP status encountered: %s", status)
     return status.strip()
+
+
+PYTHON_VERSION_PATTERN = re.compile(r"^3\.\d+$")
+
+
+def validate_python_version(version: str | None) -> str | None:
+    """Validate and normalize a CPython minor release version string (e.g. '3.10').
+
+    Returns the stripped version string if it matches '3.X', otherwise logs and returns as-is.
+    """
+    if not version or not isinstance(version, str):
+        return None
+    cleaned = version.strip()
+    if PYTHON_VERSION_PATTERN.match(cleaned):
+        return cleaned
+    logger.warning("Non-standard Python version string encountered: %s", version)
+    return cleaned
 
 
 @dataclass
@@ -94,6 +112,11 @@ def map_record_to_document_and_page(
         validated_status = validate_pep_status(metadata["status"])
         if validated_status is not None:
             metadata["status"] = validated_status
+
+    if "python_version" in metadata and isinstance(metadata["python_version"], str):
+        validated_py = validate_python_version(metadata["python_version"])
+        if validated_py is not None:
+            metadata["python_version"] = validated_py
 
     document_attrs: dict[str, Any] = {
         "id": doc_id,

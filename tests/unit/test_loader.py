@@ -230,3 +230,15 @@ async def test_load_documents_fail_fast_raises_error(tmp_path: Path):
 
     with pytest.raises(ValueError, match="missing required 'id'"):
         await load_documents_from_json(test_file, mock_session, fail_fast=True)
+
+
+def test_validate_python_version():
+    """Verify validate_python_version recognizes minor version strings and strips whitespace."""
+    from scripts.load_db import validate_python_version
+
+    assert validate_python_version("3.10") == "3.10"
+    assert validate_python_version("  3.12  ") == "3.12"
+    assert validate_python_version("3.8") == "3.8"
+    assert validate_python_version(None) is None
+    assert validate_python_version("") is None
+    assert validate_python_version("3.10.4") == "3.10.4"
