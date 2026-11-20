@@ -38,7 +38,7 @@ from scripts.load_db import load_documents_from_json
 TEST_DB_URL = os.getenv("TEST_DATABASE_URL")
 
 pytestmark = [
-    pytest.mark.anyio,
+    pytest.mark.asyncio,
     pytest.mark.skipif(
         not TEST_DB_URL,
         reason="TEST_DATABASE_URL is not set; skipping live integration tests.",
@@ -56,8 +56,8 @@ def _get_admin_sync_url(test_url: str, default_db: str = "postgres") -> str:
     )
 
 
-@pytest.fixture
-async def live_db_setup():
+@pytest.fixture(scope="session")
+def live_db_config():
     """Create a fresh database, apply Alembic migrations, and tear down after tests."""
     raw_url = os.getenv("TEST_DATABASE_URL")
     if not raw_url:
@@ -126,24 +126,19 @@ async def live_db_setup():
         else:
             os.environ.pop("DATABASE_URL", None)
 
-    engine = create_async_db_engine(async_test_url, poolclass=NullPool)
-    factory = create_async_session_factory(engine)
-
     yield {
-        "engine": engine,
-        "factory": factory,
         "async_url": async_test_url,
         "sync_url": sync_test_url,
         "db_name": actual_db_name,
         "created_new_db": created_new_db,
     }
 
-        # Teardown
-    await engine.dispose()
-
+    # Teardown database if created
     if created_new_db:
         admin_engine = None
         try:
+            from sqlalchemy import create_engine
+
             admin_engine = create_engine(admin_url, isolation_level="AUTOCOMMIT")
             with admin_engine.connect() as conn:
                 conn.execute(
@@ -161,11 +156,33 @@ async def live_db_setup():
 
 
 @pytest.fixture
+async def live_db_setup(live_db_config):
+    """Provide an AsyncEngine and session factory bound to the active test event loop."""
+    engine = create_async_db_engine(live_db_config["async_url"], poolclass=NullPool)
+    factory = create_async_session_factory(engine)
+    try:
+        yield {
+            "engine": engine,
+            "factory": factory,
+            "async_url": live_db_config["async_url"],
+            "sync_url": live_db_config["sync_url"],
+            "db_name": live_db_config["db_name"],
+            "created_new_db": live_db_config["created_new_db"],
+        }
+    finally:
+        await engine.dispose()
+
+
+@pytest.fixture
 async def db_session(live_db_setup):
     """Provide an isolated database session with rollback/cleanup."""
     factory = live_db_setup["factory"]
     async with factory() as session:
-        yield session
+        try:
+            yield session
+        finally:
+            await session.rollback()
+            await session.close()
 
 
 # ---------------------------------------------------------------------------
@@ -299,6 +316,10 @@ async def test_integration_loader_first_run(db_session: AsyncSession):
 async def test_integration_loader_second_run_idempotent(db_session: AsyncSession):
     """6. Verify sample-data loader is idempotent and reports 20 unchanged/skipped."""
     sample_path = Path(__file__).resolve().parent.parent.parent / "data" / "sample_records.json"
+
+    # Ensure initial run has completed (idempotent if run standalone or in suite)
+    await load_documents_from_json(sample_path, db_session)
+    await db_session.commit()
 
     # Second run should skip all 20 already inserted records
     stats = await load_documents_from_json(sample_path, db_session)

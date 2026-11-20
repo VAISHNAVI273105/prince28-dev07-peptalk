@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import AsyncGenerator
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from typing import Any
 from urllib.parse import parse_qsl, quote, urlencode, urlsplit, urlunsplit
 
@@ -196,6 +196,9 @@ async def dispose_engine() -> None:
 def reset_engine() -> None:
     """Reset cached engine and session factory references without awaiting disposal."""
     global _engine, _session_factory
+    if _engine is not None:
+        with suppress(Exception):
+            _engine.sync_engine.dispose()
     _engine = None
     _session_factory = None
 
