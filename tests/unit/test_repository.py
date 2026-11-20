@@ -156,3 +156,45 @@ async def test_document_store_adapter():
     assert total >= 1
     assert len(items) <= 5
     assert all(item.get("python_version") == "3.10" for item in items)
+
+
+async def test_repository_exists():
+    """Verify repository exists returns True when document exists and False otherwise."""
+    mock_result_found = MagicMock()
+    mock_result_found.scalar_one.return_value = 1
+    mock_result_not_found = MagicMock()
+    mock_result_not_found.scalar_one.return_value = 0
+
+    mock_session = AsyncMock(spec=AsyncSession)
+    mock_session.execute.side_effect = [mock_result_found, mock_result_not_found]
+
+    repo = DocumentRepository(mock_session)
+    assert await repo.exists("pep-0634") is True
+    assert await repo.exists("pep-9999") is False
+
+
+async def test_repository_count_documents():
+    """Verify repository count_documents executes count query with filters."""
+    mock_result = MagicMock()
+    mock_result.scalar_one.return_value = 42
+
+    mock_session = AsyncMock(spec=AsyncSession)
+    mock_session.execute.return_value = mock_result
+
+    repo = DocumentRepository(mock_session)
+    count = await repo.count_documents(doc_type="PEP", status="Final")
+
+    assert count == 42
+    mock_session.execute.assert_awaited_once()
+
+
+async def test_document_store_adapter_exists_and_count():
+    """Verify adapter implements exists and count_documents methods."""
+    store = DocumentStore("data/sample_records.json")
+    adapter = DocumentStoreAdapter(store)
+
+    assert await adapter.exists("pep-0634") is True
+    assert await adapter.exists("non-existent-doc") is False
+
+    count = await adapter.count_documents(python_version="3.10")
+    assert count >= 1

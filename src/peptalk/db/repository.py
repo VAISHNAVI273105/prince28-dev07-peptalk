@@ -41,6 +41,21 @@ class DocumentRepositoryProtocol(Protocol):
         """Retrieve a document by ID."""
         ...
 
+    async def exists(self, document_id: str) -> bool:
+        """Check whether a document exists by ID."""
+        ...
+
+    async def count_documents(
+        self,
+        *,
+        doc_type: str | None = None,
+        python_version: str | None = None,
+        status: str | None = None,
+        pep_number: int | None = None,
+    ) -> int:
+        """Count total documents matching given filter criteria."""
+        ...
+
     async def list_documents(
         self,
         *,
@@ -71,6 +86,39 @@ class DocumentRepository:
         if doc is None:
             return None
         return document_to_dict(doc)
+
+    async def exists(self, document_id: str) -> bool:
+        """Check whether a document exists by its ID without loading relations."""
+        stmt = select(func.count()).select_from(Document).where(Document.id == document_id)
+        result = await self.session.execute(stmt)
+        return (result.scalar_one() or 0) > 0
+
+    async def count_documents(
+        self,
+        *,
+        doc_type: str | None = None,
+        python_version: str | None = None,
+        status: str | None = None,
+        pep_number: int | None = None,
+    ) -> int:
+        """Count total documents matching given filter criteria."""
+        conditions = []
+        if doc_type is not None:
+            conditions.append(Document.doc_type == doc_type)
+        if python_version is not None:
+            conditions.append(
+                Document.document_metadata.contains({"python_version": python_version})
+            )
+        if status is not None:
+            conditions.append(Document.document_metadata.contains({"status": status}))
+        if pep_number is not None:
+            conditions.append(Document.document_metadata.contains({"pep_number": pep_number}))
+
+        stmt = select(func.count()).select_from(Document)
+        if conditions:
+            stmt = stmt.where(and_(*conditions))
+        result = await self.session.execute(stmt)
+        return result.scalar_one()
 
     async def list_documents(
         self,
@@ -134,6 +182,30 @@ class DocumentStoreAdapter:
 
     async def get_by_id(self, document_id: str) -> dict[str, Any] | None:
         return self.store.get_by_id(document_id)
+
+    async def exists(self, document_id: str) -> bool:
+        """Check whether a document exists in the store by its ID."""
+        return self.store.get_by_id(document_id) is not None
+
+    async def count_documents(
+        self,
+        *,
+        doc_type: str | None = None,
+        python_version: str | None = None,
+        status: str | None = None,
+        pep_number: int | None = None,
+    ) -> int:
+        """Count total documents matching given filter criteria."""
+        items = self.store.get_all()
+        if doc_type is not None:
+            items = [d for d in items if d.get("type") == doc_type]
+        if python_version is not None:
+            items = [d for d in items if d.get("python_version") == python_version]
+        if status is not None:
+            items = [d for d in items if d.get("status") == status]
+        if pep_number is not None:
+            items = [d for d in items if d.get("pep_number") == pep_number]
+        return len(items)
 
     async def list_documents(
         self,
