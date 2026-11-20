@@ -553,3 +553,40 @@ The codebase was elevated through exactly 30 distinct, verified, conventional gi
 28. **M28 — OCI container labels**: Added standard OCI container labels (`title`, `version`, `source`, `licenses`) in Dockerfile.
 29. **M29 — Compose log rotation**: Configured container log rotation (`max-size: 10m`, `max-file: 3`) in `docker-compose.yml`.
 30. **M30 — Developer documentation**: Documented complete 30-milestone engineering work and verification metrics.
+
+
+---
+
+## 14. Day 05 · CI/CD and Going Live
+
+- **Live URL**: https://peptalk-l60c.onrender.com
+- **CI run for pull request 1**: https://github.com/VAISHNAVI273105/prince28-dev07-peptalk/actions/runs/44708952994
+- **First deploy that ran by itself**: https://github.com/VAISHNAVI273105/prince28-dev07-peptalk/actions/runs/44711547991
+- **Merge clicked at 15:20** → "Smoke test passed" at 15:39 → lead time: ~19 min
+
+### Smoke test output from that CD run
+
+```text
+ok   /health -> 200, version bdef004820834519ac590146588dd2d72fc551a0
+ok   /ready -> 200 {'status': 'ready'}
+ok   /v1/documents?limit=1 -> 200
+Smoke test passed
+```
+
+### Rollback drill
+
+- Rolled back to sha `0adc04dcfe93fe164b4c656110dfda693387cb54` : started 15:42, smoke passed 15:44 (2 min)
+- Rolled forward to sha `bdef004820834519ac590146588dd2d72fc551a0` : 2 min
+- During the rollback, the database stayed on the newer schema. Why is that safe here?
+  All database schema migrations follow strictly additive, backward-compatible patterns. The newer schema additions do not drop or break existing columns, so older application containers continue querying the existing fields without disruption.
+
+### Where my secrets live
+
+- Neon string: GitHub Secret `DATABASE_URL` + Render environment. Not in Git, not in the image.
+- Render deploy hook: GitHub Secret `RENDER_DEPLOY_HOOK` only.
+
+### Monitoring
+
+- UptimeRobot checks `/health` every 5 minutes; alerts go to my email.
+- One thing that would make my live app faster on its first request:
+  The 5-minute external uptime ping prevents Render Free instances from entering idle sleep, and upgrading to a persistent tier eliminates cold-start spin-up latency entirely.
