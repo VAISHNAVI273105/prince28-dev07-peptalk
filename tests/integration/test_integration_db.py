@@ -346,3 +346,21 @@ async def test_integration_api_readiness_probe(live_db_setup):
         assert response.status_code == 200
         data = response.json()
         assert data.get("status") == "ready"
+
+
+async def test_integration_database_reconnect(live_db_setup):
+    """8. Verify engine cleanly reconnects and executes queries after connection disposal."""
+    engine = live_db_setup["engine"]
+
+    # First query establishes connection
+    async with engine.connect() as conn:
+        res1 = await conn.execute(text("SELECT 1"))
+        assert res1.scalar_one() == 1
+
+    # Simulate connection drop / pool disposal
+    await engine.dispose()
+
+    # Engine reconnects automatically on subsequent checkout
+    async with engine.connect() as conn:
+        res2 = await conn.execute(text("SELECT 42"))
+        assert res2.scalar_one() == 42
