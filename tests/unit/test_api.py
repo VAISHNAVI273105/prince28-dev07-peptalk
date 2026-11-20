@@ -151,3 +151,31 @@ def test_health_remains_healthy_independent_of_database(client):
         assert response.json() == {"status": "healthy"}
     finally:
         client.app.dependency_overrides.pop(check_database_readiness, None)
+
+
+def test_get_document_blank_id_returns_400(client):
+    """Verify requesting a document with whitespace ID returns 400 problem details."""
+    response = client.get("/v1/documents/%20%20")
+    assert response.status_code == 400
+    assert response.headers["content-type"].startswith("application/problem+json")
+    assert "cannot be blank or whitespace" in response.json()["detail"]
+
+
+def test_list_documents_pep_number_exceeding_max_returns_400(client):
+    """Verify pep_number exceeding 99999 returns 400 problem details."""
+    response = client.get("/v1/documents?pep_number=100000")
+    assert response.status_code == 400
+    assert response.headers["content-type"].startswith("application/problem+json")
+    assert "exceeds maximum allowable value (99999)" in response.json()["detail"]
+
+
+def test_list_documents_limit_exceeding_max_returns_422(client):
+    """Verify limit exceeding 100 triggers standard 422 validation error."""
+    response = client.get("/v1/documents?limit=101")
+    assert response.status_code == 422
+
+
+def test_list_documents_negative_offset_returns_422(client):
+    """Verify negative offset triggers standard 422 validation error."""
+    response = client.get("/v1/documents?offset=-1")
+    assert response.status_code == 422
