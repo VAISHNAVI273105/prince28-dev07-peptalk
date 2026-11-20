@@ -269,3 +269,48 @@ async def test_load_documents_in_memory_deduplication(tmp_path: Path):
     assert stats.errors == 0
     # mock_session.get should only be called once because the second was deduplicated in-memory
     assert mock_session.get.await_count == 1
+
+
+def test_map_record_optional_fields_fallback():
+    """Verify map_record_to_document_and_page handles records without created or summary."""
+    record = {
+        "id": "minimal-001",
+        "title": "Minimal Doc",
+        "type": "PEP",
+    }
+    doc_attrs, page_attrs = map_record_to_document_and_page(record)
+
+    assert doc_attrs["id"] == "minimal-001"
+    assert doc_attrs["published_on"] is None
+    assert doc_attrs["licence"] is None
+    assert doc_attrs["source_url"] == ""
+    assert page_attrs["text"] == ""
+
+
+async def test_load_documents_non_list_json_raises_value_error(tmp_path: Path):
+    """Verify JSON files with object root instead of list raise ValueError."""
+    test_file = tmp_path / "dict_root.json"
+    test_file.write_text(json.dumps({"key": "value"}), encoding="utf-8")
+
+    mock_session = AsyncMock(spec=AsyncSession)
+
+    with pytest.raises(ValueError, match="Expected JSON list"):
+        await load_documents_from_json(test_file, mock_session)
+
+
+async def test_load_documents_handles_session_exception_per_record(tmp_path: Path):
+    """Verify database exceptions during record load are caught and logged."""
+    test_file = tmp_path / "records_fail.json"
+    records = [
+        {"id": "doc-fail", "title": "Fail Doc", "summary": "Fail text"},
+    ]
+    test_file.write_text(json.dumps(records), encoding="utf-8")
+
+    mock_session = AsyncMock(spec=AsyncSession)
+    mock_session.get.side_effect = RuntimeError("Database query error")
+
+    stats = await load_documents_from_json(test_file, mock_session, fail_fast=False)
+
+    assert stats.total == 1
+    assert stats.errors == 1
+    assert stats.inserted == 0
