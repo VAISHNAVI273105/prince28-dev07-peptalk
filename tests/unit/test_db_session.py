@@ -171,6 +171,19 @@ async def test_create_async_db_engine_configuration():
         assert isinstance(engine, AsyncEngine)
         assert engine.url.drivername == "postgresql+asyncpg"
         assert engine.pool._pre_ping is True
+        assert engine.pool._recycle == 1800
+    finally:
+        await engine.dispose()
+
+
+async def test_create_async_db_engine_custom_pool_recycle():
+    """Verify create_async_db_engine accepts custom pool_recycle duration."""
+    engine = create_async_db_engine(
+        "postgresql://localhost:5432/testdb",
+        pool_recycle=900,
+    )
+    try:
+        assert engine.pool._recycle == 900
     finally:
         await engine.dispose()
 

@@ -94,6 +94,7 @@ def create_async_db_engine(
     *,
     echo: bool = False,
     pool_pre_ping: bool = True,
+    pool_recycle: int = 1800,
     **kwargs: Any,
 ) -> AsyncEngine:
     """Create an asynchronous SQLAlchemy engine for PostgreSQL.
@@ -102,6 +103,7 @@ def create_async_db_engine(
         url: Database connection string or SecretStr.
         echo: Whether to log generated SQL statements.
         pool_pre_ping: Pre-ping connections before checkout (essential for Neon).
+        pool_recycle: Seconds after which idle connections are recycled (default 1800).
         **kwargs: Additional keyword arguments forwarded to create_async_engine.
 
     Returns:
@@ -112,6 +114,7 @@ def create_async_db_engine(
         normalized_url,
         echo=echo,
         pool_pre_ping=pool_pre_ping,
+        pool_recycle=pool_recycle,
         **kwargs,
     )
 
