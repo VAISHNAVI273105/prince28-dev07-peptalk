@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Protocol
 
-from sqlalchemy import and_, func, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -67,6 +67,16 @@ class DocumentRepositoryProtocol(Protocol):
         pep_number: int | None = None,
     ) -> tuple[list[dict[str, Any]], int]:
         """List documents matching filters with pagination."""
+        ...
+
+    async def search_documents(
+        self,
+        query: str,
+        *,
+        limit: int = 20,
+        offset: int = 0,
+    ) -> tuple[list[dict[str, Any]], int]:
+        """Search documents by title or identifier using case-insensitive matching."""
         ...
 
 
@@ -173,6 +183,40 @@ class DocumentRepository:
         items = [document_to_dict(doc) for doc in docs]
         return items, total
 
+    async def search_documents(
+        self,
+        query: str,
+        *,
+        limit: int = 20,
+        offset: int = 0,
+    ) -> tuple[list[dict[str, Any]], int]:
+        """Search documents by title or identifier using case-insensitive matching."""
+        term = query.strip()
+        if not term:
+            return await self.list_documents(limit=limit, offset=offset)
+
+        search_filter = or_(
+            Document.title.ilike(f"%{term}%"),
+            Document.id.ilike(f"%{term}%"),
+        )
+        count_stmt = select(func.count()).select_from(Document).where(search_filter)
+        total = (await self.session.execute(count_stmt)).scalar_one()
+
+        if total == 0 or offset >= total:
+            return [], total
+
+        stmt = (
+            select(Document)
+            .options(selectinload(Document.pages))
+            .where(search_filter)
+            .order_by(Document.id.asc())
+            .limit(limit)
+            .offset(offset)
+        )
+        result = await self.session.execute(stmt)
+        docs = result.scalars().all()
+        return [document_to_dict(d) for d in docs], total
+
 
 class DocumentStoreAdapter:
     """Adapter wrapping DocumentStore to match DocumentRepositoryProtocol."""
@@ -231,3 +275,27 @@ class DocumentStoreAdapter:
         if total == 0 or offset >= total:
             return [], total
         return items[offset : offset + limit], total
+
+    async def search_documents(
+        self,
+        query: str,
+        *,
+        limit: int = 20,
+        offset: int = 0,
+    ) -> tuple[list[dict[str, Any]], int]:
+        """Search documents by title or identifier in memory."""
+        term = query.strip().lower()
+        if not term:
+            return await self.list_documents(limit=limit, offset=offset)
+
+        matching = [
+            d
+            for d in self.store.get_all()
+            if term in str(d.get("title", "")).lower()
+            or term in str(d.get("id", "")).lower()
+            or term in str(d.get("summary", "")).lower()
+        ]
+        total = len(matching)
+        if total == 0 or offset >= total:
+            return [], total
+        return matching[offset : offset + limit], total

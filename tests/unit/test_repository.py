@@ -198,3 +198,42 @@ async def test_document_store_adapter_exists_and_count():
 
     count = await adapter.count_documents(python_version="3.10")
     assert count >= 1
+
+
+async def test_repository_search_documents():
+    """Verify repository search_documents constructs case-insensitive filter query."""
+    mock_doc = MagicMock(spec=Document)
+    mock_doc.id = "pep-0634"
+    mock_doc.title = "Structural Pattern Matching"
+    mock_doc.source_url = "https://peps.python.org/pep-0634/"
+    mock_doc.licence = None
+    mock_doc.doc_type = "PEP"
+    mock_doc.published_on = None
+    mock_doc.document_metadata = {}
+    mock_doc.pages = []
+
+    count_result = MagicMock()
+    count_result.scalar_one.return_value = 1
+
+    docs_result = MagicMock()
+    docs_result.scalars.return_value.all.return_value = [mock_doc]
+
+    mock_session = AsyncMock(spec=AsyncSession)
+    mock_session.execute.side_effect = [count_result, docs_result]
+
+    repo = DocumentRepository(mock_session)
+    items, total = await repo.search_documents("Pattern Matching")
+
+    assert total == 1
+    assert len(items) == 1
+    assert items[0]["id"] == "pep-0634"
+
+
+async def test_document_store_adapter_search():
+    """Verify DocumentStoreAdapter searches by keyword in title or id."""
+    store = DocumentStore("data/sample_records.json")
+    adapter = DocumentStoreAdapter(store)
+
+    items, total = await adapter.search_documents("pattern matching")
+    assert total >= 1
+    assert any("pattern" in d.get("title", "").lower() for d in items)
