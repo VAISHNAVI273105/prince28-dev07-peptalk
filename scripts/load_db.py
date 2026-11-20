@@ -161,12 +161,15 @@ async def load_record(session: AsyncSession, record: dict[str, Any]) -> str:
 async def load_documents_from_json(
     file_path: Path | str,
     session: AsyncSession,
+    *,
+    fail_fast: bool = False,
 ) -> LoadStats:
     """Load documentation records from a JSON file into PostgreSQL idempotently.
 
     Args:
         file_path: Path to the JSON source records.
         session: Active async database session.
+        fail_fast: If True, raise immediately on the first error. Defaults to False.
 
     Returns:
         LoadStats detailing the number of inserted, updated, and skipped records.
@@ -184,6 +187,13 @@ async def load_documents_from_json(
     stats = LoadStats(total=len(records))
 
     for record in records:
+        if not isinstance(record, dict) or "id" not in record or not record.get("id"):
+            stats.errors += 1
+            logger.warning("Skipping malformed record missing valid 'id': %s", record)
+            if fail_fast:
+                raise ValueError("Record is missing required 'id' attribute")
+            continue
+
         try:
             status = await load_record(session, record)
             if status == "inserted":
@@ -195,7 +205,8 @@ async def load_documents_from_json(
         except Exception:
             stats.errors += 1
             logger.exception("Failed to load record with id '%s'", record.get("id"))
-            raise
+            if fail_fast:
+                raise
 
     await session.commit()
     return stats

@@ -196,3 +196,37 @@ def test_validate_pep_status():
     assert validate_pep_status(None) is None
     assert validate_pep_status("") is None
     assert validate_pep_status("CustomStatus") == "CustomStatus"
+
+
+async def test_load_documents_graceful_malformed_record_handling(tmp_path: Path):
+    """Verify malformed records without ID are skipped and counted in stats.errors."""
+    test_file = tmp_path / "records_with_malformed.json"
+    records = [
+        {"id": "valid-1", "title": "Valid One", "source_url": "https://a.com", "summary": "One"},
+        {"title": "Missing ID", "source_url": "https://b.com"},  # Malformed: no id
+        {"id": "", "title": "Empty ID", "source_url": "https://c.com"},  # Malformed: empty id
+        {"id": "valid-2", "title": "Valid Two", "source_url": "https://d.com", "summary": "Two"},
+    ]
+    test_file.write_text(json.dumps(records), encoding="utf-8")
+
+    mock_session = AsyncMock(spec=AsyncSession)
+    mock_session.get.return_value = None
+
+    stats = await load_documents_from_json(test_file, mock_session, fail_fast=False)
+
+    assert stats.total == 4
+    assert stats.inserted == 2
+    assert stats.errors == 2
+    mock_session.commit.assert_awaited_once()
+
+
+async def test_load_documents_fail_fast_raises_error(tmp_path: Path):
+    """Verify fail_fast=True raises ValueError on encountering malformed record."""
+    test_file = tmp_path / "records_bad.json"
+    records = [{"title": "No ID"}]
+    test_file.write_text(json.dumps(records), encoding="utf-8")
+
+    mock_session = AsyncMock(spec=AsyncSession)
+
+    with pytest.raises(ValueError, match="missing required 'id'"):
+        await load_documents_from_json(test_file, mock_session, fail_fast=True)
