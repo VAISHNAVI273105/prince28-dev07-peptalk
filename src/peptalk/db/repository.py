@@ -28,8 +28,12 @@ def document_to_dict(doc: Document) -> dict[str, Any]:
 
     if doc.pages:
         page_1 = next((p for p in doc.pages if p.page_no == 1), None)
-        if page_1:
+        if page_1 and page_1.text:
             data["summary"] = page_1.text
+        else:
+            data.setdefault("summary", "")
+    else:
+        data.setdefault("summary", "")
 
     return data
 

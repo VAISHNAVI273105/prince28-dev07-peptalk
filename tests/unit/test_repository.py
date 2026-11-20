@@ -43,6 +43,25 @@ def test_document_to_dict_serialization():
     assert serialized["python_version"] == "3.10"
 
 
+def test_document_to_dict_empty_pages_resilient_summary():
+    """Verify document_to_dict defaults summary to empty string when pages list is empty."""
+    doc = Document(
+        id="pep-0001",
+        title="PEP Purpose and Guidelines",
+        source_url="https://peps.python.org/pep-0001/",
+        licence=None,
+        doc_type="PEP",
+        published_on=None,
+        sha256="b" * 64,
+        document_metadata={},
+    )
+    doc.pages = []
+
+    serialized = document_to_dict(doc)
+    assert serialized["id"] == "pep-0001"
+    assert serialized["summary"] == ""
+
+
 async def test_repository_get_by_id_found():
     """Verify repository get_by_id returns serialized dict when document exists."""
     mock_doc = MagicMock(spec=Document)
