@@ -99,22 +99,26 @@ class DocumentRepository:
         if pep_number is not None:
             conditions.append(Document.document_metadata.contains({"pep_number": pep_number}))
 
-        where_clause = and_(*conditions) if conditions else True
-
         # Total count query
-        count_stmt = select(func.count()).select_from(Document).where(where_clause)
+        count_stmt = select(func.count()).select_from(Document)
+        if conditions:
+            count_stmt = count_stmt.where(and_(*conditions))
         count_result = await self.session.execute(count_stmt)
         total = count_result.scalar_one()
+
+        if total == 0 or offset >= total:
+            return [], total
 
         # Paginated query with eager loading of pages
         stmt = (
             select(Document)
             .options(selectinload(Document.pages))
-            .where(where_clause)
             .order_by(Document.id.asc())
             .limit(limit)
             .offset(offset)
         )
+        if conditions:
+            stmt = stmt.where(and_(*conditions))
         result = await self.session.execute(stmt)
         docs = result.scalars().all()
 
@@ -152,4 +156,6 @@ class DocumentStoreAdapter:
             items = [d for d in items if d.get("pep_number") == pep_number]
 
         total = len(items)
+        if total == 0 or offset >= total:
+            return [], total
         return items[offset : offset + limit], total

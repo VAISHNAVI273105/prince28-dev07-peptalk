@@ -122,6 +122,22 @@ async def test_repository_list_documents_filtering_and_pagination():
     assert mock_session.execute.await_count == 2
 
 
+async def test_repository_list_documents_short_circuits_on_zero_total():
+    """Verify list_documents avoids secondary fetch query when total count is 0."""
+    count_result = MagicMock()
+    count_result.scalar_one.return_value = 0
+
+    mock_session = AsyncMock(spec=AsyncSession)
+    mock_session.execute.return_value = count_result
+
+    repo = DocumentRepository(mock_session)
+    items, total = await repo.list_documents(doc_type="NonExistent")
+
+    assert total == 0
+    assert items == []
+    assert mock_session.execute.await_count == 1
+
+
 async def test_document_store_adapter():
     """Verify DocumentStoreAdapter adapts DocumentStore to repository protocol."""
     store = DocumentStore("data/sample_records.json")
