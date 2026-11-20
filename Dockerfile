@@ -22,6 +22,12 @@ RUN uv sync --frozen --no-dev
 # ---------- Stage 2: Runtime ----------
 FROM python:3.12-slim AS runtime
 
+LABEL org.opencontainers.image.title="peptalk" \
+      org.opencontainers.image.description="PEPTalk - AI assistant for Python Enhancement Proposals and documentation" \
+      org.opencontainers.image.version="0.1.0" \
+      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.source="https://github.com/VAISHNAVI273105/prince28-dev07-peptalk"
+
 # Create a dedicated non-root application user
 RUN useradd --create-home --uid 10001 app
 
