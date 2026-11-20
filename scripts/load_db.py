@@ -21,6 +21,32 @@ from peptalk.db.session import dispose_engine, session_scope
 
 logger = logging.getLogger(__name__)
 
+VALID_PEP_STATUSES: set[str] = {
+    "Draft",
+    "Active",
+    "Accepted",
+    "Provisional",
+    "Deferred",
+    "Rejected",
+    "Withdrawn",
+    "Final",
+    "Superseded",
+}
+
+
+def validate_pep_status(status: str | None) -> str | None:
+    """Validate and normalize a PEP status string against standard PEP statuses.
+
+    Returns canonical title-cased status if recognized, otherwise preserves stripped input.
+    """
+    if not status or not isinstance(status, str):
+        return None
+    canonical = status.strip().title()
+    if canonical in VALID_PEP_STATUSES:
+        return canonical
+    logger.warning("Unrecognized PEP status encountered: %s", status)
+    return status.strip()
+
 
 @dataclass
 class LoadStats:
@@ -63,6 +89,11 @@ def map_record_to_document_and_page(
     for key, value in record.items():
         if key not in {"id", "title", "source_url", "type", "created", "summary"}:
             metadata[key] = value
+
+    if "status" in metadata and isinstance(metadata["status"], str):
+        validated_status = validate_pep_status(metadata["status"])
+        if validated_status is not None:
+            metadata["status"] = validated_status
 
     document_attrs: dict[str, Any] = {
         "id": doc_id,

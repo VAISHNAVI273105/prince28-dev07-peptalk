@@ -183,3 +183,16 @@ async def test_load_documents_missing_file_raises_error(tmp_path: Path):
 
     with pytest.raises(FileNotFoundError, match="JSON source file not found"):
         await load_documents_from_json(missing, mock_session)
+
+
+def test_validate_pep_status():
+    """Verify validate_pep_status normalizes standard PEP statuses and handles edge cases."""
+    from scripts.load_db import validate_pep_status
+
+    assert validate_pep_status("final") == "Final"
+    assert validate_pep_status("DRAFT") == "Draft"
+    assert validate_pep_status("Active") == "Active"
+    assert validate_pep_status("superseded") == "Superseded"
+    assert validate_pep_status(None) is None
+    assert validate_pep_status("") is None
+    assert validate_pep_status("CustomStatus") == "CustomStatus"
