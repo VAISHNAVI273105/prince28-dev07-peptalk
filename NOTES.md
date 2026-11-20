@@ -516,3 +516,40 @@ Makefile:
 
 Pre-commit Verification:
 - All hooks passed: trailing whitespace, end of files, yaml check, ruff lint, ruff format, detect-secrets.
+
+---
+
+## 13. 30 Production-Grade Milestones Log (on `main`)
+
+The codebase was elevated through exactly 30 distinct, verified, conventional git commits on `main`:
+
+1. **M01 — Package metadata**: Added license, authors, keywords, classifiers, and project URLs to `pyproject.toml`.
+2. **M02 — Dependency groups**: Adopted PEP 735 `dependency-groups` for test and lint tooling.
+3. **M03 — Store typing & protocols**: Enhanced `DocumentStore` with PEP 695 type aliases and container protocols.
+4. **M04 — Ruff lint rule sets**: Expanded lint coverage with `C4` (comprehensions), `PIE`, `RSE`, and `ISC`.
+5. **M05 — OpenAPI schema metadata**: Enriched OpenAPI documentation with endpoint summaries, descriptions, and contact info.
+6. **M06 — Pydantic response models**: Introduced typed `DocumentResponse` and `DocumentListResponse` schemas.
+7. **M07 — Identifier and bounds validation**: Added validation rejecting empty identifiers and limiting `pep_number <= 99999`.
+8. **M08 — RFC 9457 problem details factory**: Standardized error creation and added stack-trace error logging.
+9. **M09 — Client IP diagnostic metadata**: Propagated sanitized `client_ip` to structured request JSON logs.
+10. **M10 — Settings log level normalization**: Case-insensitive log levels, file extension checks, and environment helpers.
+11. **M11 — Domain model repr**: Added informative `__repr__` and `__str__` to `Document` and `Page` models.
+12. **M12 — Query efficiency**: Short-circuited document query on zero total count or out-of-bounds offset.
+13. **M13 — Repository existence and count**: Added `exists()` and `count_documents()` to protocol, repository, and adapter.
+14. **M14 — Migration metadata check**: Added `verify_migration_target_metadata()` guarding against missing tables.
+15. **M15 — Connection pool recycling**: Added default `pool_recycle=1800` (30m) for serverless database resilience.
+16. **M17 — PEP metadata validation**: Canonical PEP status normalization against standard PEP statuses.
+17. **M17 — Ingestion error resilience**: Resilient record parsing continuing batch ingestion across malformed items.
+18. **M18 — CPython version validation**: Format verification for minor release version strings (`^3\.\d+$`).
+19. **M19 — In-memory deduplication**: Deduplication of identical records within single batch loading transactions.
+20. **M20 — Repository search**: Case-insensitive search on titles and document identifiers in DB and memory.
+21. **M21 — Resilient serialization**: Fallback summary extraction in `document_to_dict` serialization.
+22. **M22 — Citation formatter**: Formatter producing markdown reference links for RAG and assistant responses.
+23. **M23 — Python version validation**: Supported CPython release version validator (3.8-3.13).
+24. **M24 — API edge-case tests**: Unit tests for blank ID (400), PEP bounds (400), pagination limits (422).
+25. **M25 — Loader edge-case tests**: Unit tests for malformed JSON, missing summaries, database exception recovery.
+26. **M26 — Integration test teardown**: Refined PostgreSQL connection termination in integration test cleanup.
+27. **M27 — Reconnection recovery test**: Integration test verifying engine recovery after connection pool disposal.
+28. **M28 — OCI container labels**: Added standard OCI container labels (`title`, `version`, `source`, `licenses`) in Dockerfile.
+29. **M29 — Compose log rotation**: Configured container log rotation (`max-size: 10m`, `max-file: 3`) in `docker-compose.yml`.
+30. **M30 — Developer documentation**: Documented complete 30-milestone engineering work and verification metrics.

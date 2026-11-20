@@ -237,11 +237,49 @@ The test profile uses a separate PostgreSQL test database so integration tests d
 
 | Metric | Result |
 |---|---:|
-| Tests passed | 111 |
-| Code coverage | 95% |
-| Docker image size | Approximately 71 MB |
+| Tests passed | 134 unit tests (plus 8 live integration tests) |
+| Code coverage | 96% |
+| Docker image size | 74.6 MB content size (318 MB disk usage, <400 MB requirement) |
+| Container security | Non-root app user (uid=10001) |
 
 These are results from the latest recorded Docker test and image checks; they may change as the project evolves.
+
+## 30 Development Milestones
+
+The project was evolved through 30 production-grade development milestones on `main`:
+
+| No. | Milestone | Description |
+|---|---|---|
+| M01 | Package metadata | Complete PyPI classifiers, author, keywords, and repository URLs |
+| M02 | Dependency groups | PEP 735 organized `test` and `lint` dependency groups |
+| M03 | Store typing & protocols | PEP 695 type aliases, container protocols (`__len__`, `__iter__`) |
+| M04 | Ruff lint expansion | Enforce `C4`, `PIE`, `RSE`, and `ISC` comprehensive rule sets |
+| M05 | OpenAPI schema docs | Rich endpoint summaries, operation IDs, tags, contact metadata |
+| M06 | Pydantic response models | Typed `DocumentResponse` and `DocumentListResponse` schemas |
+| M07 | Parameter edge-case validation | Identifier whitespace and PEP number bounds checks (<=99999) |
+| M08 | RFC 9457 error factory | Standardized problem details factory with exception trace logging |
+| M09 | Client IP diagnostics | Sanitized client IP extraction in structured JSON request logs |
+| M10 | Settings validation | Log level case normalization and `.is_production`/`.is_testing` helpers |
+| M11 | Domain model repr | Informative `__repr__` and `__str__` methods for Document and Page |
+| M12 | Query efficiency | Short-circuit document query on zero total count or out-of-bounds offset |
+| M13 | Repository existence & count | Dedicated `exists()` and `count_documents()` repository methods |
+| M14 | Migration metadata safety | Startup metadata integrity check verifying registered model tables |
+| M15 | Connection pool reliability | Automatic connection recycling (`pool_recycle=1800`) for async engine |
+| M16 | PEP metadata validation | Canonical PEP status normalization against standard statuses |
+| M17 | Ingestion error resilience | Resilient parsing skipping malformed records without failing batch |
+| M18 | CPython version validation | Validation for CPython release version strings (`^3\.\d+$`) |
+| M19 | In-memory deduplication | In-memory deduplication of identical records during batch ingestion |
+| M20 | Repository search | Case-insensitive keyword search on document titles and identifiers |
+| M21 | Resilient serialization | Safe fallback summary extraction in `document_to_dict` |
+| M22 | Citation formatting | Assistant citation formatter generating markdown reference links |
+| M23 | Python version accuracy | Supported CPython version validation helper (3.8-3.13) |
+| M24 | API edge-case tests | Unit tests for blank ID (400), PEP bounds (400), pagination limits (422) |
+| M25 | Loader edge-case tests | Unit tests for malformed JSON, missing summaries, database error handling |
+| M26 | Integration test teardown | Robust PostgreSQL process termination and cleanup in test fixtures |
+| M27 | Reconnection recovery test | Live integration test verifying engine recovery after connection drop |
+| M28 | OCI container labels | Standard OCI labels (title, version, source, license) in Dockerfile |
+| M29 | Compose log rotation | Standardized container log rotation limits (`max-size: 10m`, `max-file: 3`) |
+| M30 | Milestone documentation | Comprehensive developer documentation and verification report |
 
 ## Code Quality Checks
 
