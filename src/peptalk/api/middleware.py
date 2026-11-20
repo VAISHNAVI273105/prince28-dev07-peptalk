@@ -28,6 +28,8 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
             response.headers["X-Request-ID"] = request_id
             response.headers["X-Process-Time-Ms"] = f"{elapsed_ms:.2f}"
 
+            client_ip = request.client.host if request.client else "-"
+
             logger.info(
                 "Request completed",
                 extra={
@@ -35,6 +37,7 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
                     "method": request.method,
                     "status_code": response.status_code,
                     "duration_ms": round(elapsed_ms, 2),
+                    "client_ip": client_ip,
                 },
             )
 

@@ -30,6 +30,9 @@ class JSONFormatter(logging.Formatter):
         if hasattr(record, "duration_ms"):
             log_data["duration_ms"] = record.duration_ms
 
+        if hasattr(record, "client_ip"):
+            log_data["client_ip"] = record.client_ip
+
         if record.exc_info:
             log_data["exception"] = self.formatException(record.exc_info)
 
