@@ -4,6 +4,7 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from peptalk.api.deps import get_document_repository
+from peptalk.api.schemas import DocumentListResponse, DocumentResponse
 from peptalk.db.repository import DocumentRepositoryProtocol
 
 router = APIRouter(prefix="/v1/documents", tags=["documents"])
@@ -66,6 +67,7 @@ def validate_filters(
 
 @router.get(
     "",
+    response_model=DocumentListResponse,
     summary="List Python documentation records",
     description=(
         "Retrieve paginated Python PEP and What's New records with optional filtering "
@@ -110,6 +112,7 @@ async def list_documents(
 
 @router.get(
     "/{document_id}",
+    response_model=DocumentResponse,
     summary="Get document by ID",
     description=(
         "Retrieve complete metadata, publication date, source URL, and first-page text summary "
