@@ -318,3 +318,15 @@ async def test_get_db_session_dependency_yields_session(monkeypatch: pytest.Monk
 
     mock_session.__aexit__.assert_awaited_once_with(None, None, None)
     mock_session.close.assert_awaited_once()
+
+
+def test_get_admin_sync_url_normalization():
+    """Verify _get_admin_sync_url converts async URL and points to admin database."""
+    from tests.integration.test_integration_db import _get_admin_sync_url
+
+    raw_url = "postgresql+asyncpg://u:p@db/appdb?sslmode=require"  # pragma: allowlist secret
+    admin_url = _get_admin_sync_url(raw_url, default_db="postgres")
+    expected = (
+        "postgresql+psycopg://u:p@db/postgres?sslmode=require"  # pragma: allowlist secret
+    )
+    assert admin_url == expected

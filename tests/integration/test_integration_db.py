@@ -50,8 +50,9 @@ def _get_admin_sync_url(test_url: str, default_db: str = "postgres") -> str:
     """Generate synchronous administrative URL connecting to default database."""
     sync_url = get_sync_database_url(test_url)
     parsed = urlsplit(sync_url)
+    target_db = default_db.strip().lstrip("/")
     return urlunsplit(
-        (parsed.scheme, parsed.netloc, f"/{default_db}", parsed.query, parsed.fragment)
+        (parsed.scheme, parsed.netloc, f"/{target_db}", parsed.query, parsed.fragment)
     )
 
 
@@ -148,19 +149,22 @@ def live_db_setup():
         pass
 
     if created_new_db:
+        admin_engine = None
         try:
             admin_engine = create_engine(admin_url, isolation_level="AUTOCOMMIT")
             with admin_engine.connect() as conn:
                 conn.execute(
                     text(
-                        f"SELECT pg_terminate_backend(pid) FROM pg_stat_activity "
+                        "SELECT pg_terminate_backend(pid) FROM pg_stat_activity "
                         f"WHERE datname = '{actual_db_name}' AND pid <> pg_backend_pid()"
                     )
                 )
                 conn.execute(text(f'DROP DATABASE IF EXISTS "{actual_db_name}"'))
-            admin_engine.dispose()
         except Exception:
             pass
+        finally:
+            if admin_engine is not None:
+                admin_engine.dispose()
 
 
 @pytest.fixture
