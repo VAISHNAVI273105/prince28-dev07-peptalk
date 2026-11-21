@@ -30,6 +30,15 @@ def test_readiness_endpoint(client):
     assert response.json() == {"status": "ready"}
 
 
+def test_health_and_readiness_head_requests(client):
+    """Verify /health and /ready support HTTP HEAD requests from tools like UptimeRobot."""
+    health_resp = client.head("/health")
+    assert health_resp.status_code == 200
+
+    ready_resp = client.head("/ready")
+    assert ready_resp.status_code == 200
+
+
 def test_list_documents(client):
     response = client.get("/v1/documents")
     assert response.status_code == 200

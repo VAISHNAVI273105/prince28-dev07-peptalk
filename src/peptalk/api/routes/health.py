@@ -8,7 +8,7 @@ from peptalk.config import Settings, get_settings
 router = APIRouter()
 
 
-@router.get("/health")
+@router.api_route("/health", methods=["GET", "HEAD"])
 async def health_check(
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> dict[str, Any]:
@@ -21,7 +21,7 @@ async def health_check(
     }
 
 
-@router.get("/ready")
+@router.api_route("/ready", methods=["GET", "HEAD"])
 async def readiness_check(
     is_ready: Annotated[bool, Depends(check_database_readiness)],
 ) -> dict[str, str]:
