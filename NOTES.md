@@ -18,7 +18,7 @@ PEPTalk is a documentation assistant for modern Python versions (3.9 to 3.13) bu
 
 ---
 
-## 2. Database Schema Summary
+## D03 · PostgreSQL & Database Schema Summary
 
 The database schema models Python documentation records and their associated text content.
 
@@ -557,7 +557,7 @@ The codebase was elevated through exactly 30 distinct, verified, conventional gi
 
 ---
 
-## 14. Day 05 · CI/CD and Going Live
+## D05 · CI/CD and Going Live
 
 - **Live URL**: https://peptalk-l60c.onrender.com
 - **CI run for pull request 1**: https://github.com/VAISHNAVI273105/prince28-dev07-peptalk/actions/runs/44708952994
