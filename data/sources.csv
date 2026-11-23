@@ -1,0 +1,17 @@
+# Sources for PEPTalk. One row per file to download. Lines starting with # are notes.
+# Start target: Final + Active PEPs and What's New 3.10-3.13
+# Where to look:
+#   https://github.com/python/peps
+#   https://docs.python.org/3/whatsnew/index.html
+# Terms on my project card: PEPs are public domain or CC0; Python docs PSF licence.
+url,source,licence,title
+https://docs.python.org/3/whatsnew/3.10.html,python-docs,"PSF License",What's New In Python 3.10
+https://docs.python.org/3/whatsnew/3.11.html,python-docs,"PSF License",What's New In Python 3.11
+https://docs.python.org/3/whatsnew/3.12.html,python-docs,"PSF License",What's New In Python 3.12
+https://docs.python.org/3/whatsnew/3.13.html,python-docs,"PSF License",What's New In Python 3.13
+https://peps.python.org/pep-0008/,peps-web,"Public domain or CC0",PEP 8 - Style Guide for Python Code
+https://peps.python.org/pep-0557/,peps-web,"Public domain or CC0",PEP 557 - Data Classes
+https://peps.python.org/pep-0604/,peps-web,"Public domain or CC0",PEP 604 - Allow writing union types as X | Y
+https://peps.python.org/pep-0634/,peps-web,"Public domain or CC0",PEP 634 - Structural Pattern Matching: Specification
+https://peps.python.org/pep-0701/,peps-web,"Public domain or CC0",PEP 701 - Syntactic formalization of f-strings
+https://peps.python.org/pep-0703/,peps-web,"Public domain or CC0",PEP 703 - Making the Global Interpreter Lock Optional in CPython

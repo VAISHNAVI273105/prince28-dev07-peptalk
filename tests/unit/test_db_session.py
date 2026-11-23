@@ -326,7 +326,5 @@ def test_get_admin_sync_url_normalization():
 
     raw_url = "postgresql+asyncpg://u:p@db/appdb?sslmode=require"  # pragma: allowlist secret
     admin_url = _get_admin_sync_url(raw_url, default_db="postgres")
-    expected = (
-        "postgresql+psycopg://u:p@db/postgres?sslmode=require"  # pragma: allowlist secret
-    )
+    expected = "postgresql+psycopg://u:p@db/postgres?sslmode=require"  # pragma: allowlist secret
     assert admin_url == expected

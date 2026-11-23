@@ -202,6 +202,7 @@ def test_verify_migration_target_metadata_success():
 
 def test_verify_migration_target_metadata_missing_tables():
     """Verify verify_migration_target_metadata raises RuntimeError when tables are missing."""
+
     class FakeMetadata:
         tables = {"documents": None}
 
