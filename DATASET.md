@@ -243,3 +243,7 @@ The complete list, with a sha256 fingerprint of every file, is `data/manifest.js
 
 - The start target (Final + Active PEPs and What's New 3.10-3.13) is collected: 767 PEPs via Door 2 shallow git clone, 4 What's New releases (3.10 to 3.13), and 6 key PEP reference HTML files via Door 1.
 - Gaps toward the 1,500 full target: older What's New documents (Python 3.8 and 3.9), CPython release changelogs, and historical PEP supplementary attachments, which will be fetched in subsequent ingestion cycles.
+
+## Duplicate check
+
+- Scanned all 777 manifest entries in `data/manifest.jsonl` by sha256 checksum: **0 duplicates** (all 777 files have unique hashes; no redundant files downloaded).
