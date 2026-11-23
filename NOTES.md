@@ -631,3 +631,9 @@ Smoke test passed
 
 ### One thing that went wrong today, and how I fixed it
 Door 2 (`scripts/fetch.py repo`) failed initially because `data/raw/peps` already existed from Door 1 HTML downloads. I separated the web-scraped PEP HTML sources into `peps-web` so `data/raw/peps` could cleanly host the shallow sparse Git checkout of `python/peps`.
+
+### Crawl in numbers
+
+- **Volume by source**: `peps` (767 files, 14.83 MB), `python-docs` (4 files, 1.63 MB), `peps-web` (6 files, 0.55 MB).
+- **Slowest source**: `docs.python.org` (large 450+ KB single HTML docs), streamed cleanly with zero socket timeouts.
+- **Reliability & duplicates**: 0 retries required, 0 blocked by robots.txt, 0 duplicates across 777 unique SHA256 hashes.
