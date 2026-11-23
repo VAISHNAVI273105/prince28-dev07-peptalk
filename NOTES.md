@@ -590,3 +590,44 @@ Smoke test passed
 - UptimeRobot checks `/health` every 5 minutes; alerts go to my email.
 - One thing that would make my live app faster on its first request:
   The 5-minute external uptime ping prevents Render Free instances from entering idle sleep, and upgrading to a persistent tier eliminates cold-start spin-up latency entirely.
+
+---
+
+## D06 · Collecting the corpus
+
+- Start target: Final + Active PEPs and What's New 3.10-3.13
+- Collected today: 777 files, 5,138 pages, 17.0 MB (from DATASET.md)
+- Doors used: URL list / Git repository
+
+### Licence check
+
+| Source | Licence or terms, in my words | May I show full text in answers? |
+|---|---|---|
+| peps | PEPs are public domain or CC0; Python docs PSF licence. | Yes, public domain/CC0 permits full quoting and answer presentation with attribution. |
+| python-docs | PSF License (Python Software Foundation License version 2) | Yes, PSF license permits redistribution and excerpting with standard notice. |
+| peps-web | Public domain or CC0 | Yes, full text can be quoted and shown in user answers. |
+
+### robots.txt
+
+- Site: docs.python.org & peps.python.org . Its robots.txt says (2 lines):
+  docs.python.org disallows /dev/ and internal dynamic endpoints; /3.* documentation is permitted.
+  peps.python.org disallows /build/ and internal artifacts; all published PEPs are permitted.
+- Was anything blocked for my bot? What did I do about it?
+  Nothing was blocked (0 blocked, 0 failed). The bot uses a polite 0.5s pause, max concurrency 4, and leverages Door 2 git shallow clone for batch PEP retrieval to avoid scraping burden.
+
+### Kill and resume
+
+- Run 1: I pressed Ctrl+C after 4 files
+- Run 2: downloaded=6 skipped=4
+- Run 3: downloaded=0 skipped=10
+
+### Capacity (from docs/CAPACITY.md)
+
+- Tokens per page, measured: 750
+- Full corpus: 7.44 M tokens, 21,388 chunks, embedding about Rs 122, vectors 66 MB
+- The number that surprised me most, and why (2 lines):
+  Embedding 7.44M tokens (full 1,500 document corpus) costs only $1.28 (~Rs 122).
+  I expected embeddings and storage to be substantial, but modern token pricing and pgvector footprint easily fit within free tier quotas.
+
+### One thing that went wrong today, and how I fixed it
+Door 2 (`scripts/fetch.py repo`) failed initially because `data/raw/peps` already existed from Door 1 HTML downloads. I separated the web-scraped PEP HTML sources into `peps-web` so `data/raw/peps` could cleanly host the shallow sparse Git checkout of `python/peps`.

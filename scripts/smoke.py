@@ -63,9 +63,7 @@ def smoke_test(
                 health_ok = True
                 break
             else:
-                print(
-                    f"waiting: /health -> 200 {active_version} (waiting for {expect_version})"
-                )
+                print(f"waiting: /health -> 200 {active_version} (waiting for {expect_version})")
         else:
             print(f"waiting: /health -> {status} (service starting)")
         time.sleep(interval)
@@ -96,7 +94,9 @@ def smoke_test(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Smoke test live PEPTalk deployment.")
-    parser.add_argument("url", help="Base URL of the deployment (e.g. https://peptalk.onrender.com)")
+    parser.add_argument(
+        "url", help="Base URL of the deployment (e.g. https://peptalk.onrender.com)"
+    )
     parser.add_argument(
         "--expect-version",
         default=None,

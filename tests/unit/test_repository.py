@@ -79,7 +79,10 @@ def test_format_document_citation():
     citation = format_document_citation(pep_doc)
     assert citation["id"] == "pep-0634"
     assert citation["reference"] == "PEP 634: Pattern Matching"
-    assert citation["markdown_link"] == "[PEP 634: Pattern Matching](https://peps.python.org/pep-0634/)"
+    assert (
+        citation["markdown_link"]
+        == "[PEP 634: Pattern Matching](https://peps.python.org/pep-0634/)"
+    )
 
     general_doc = {
         "id": "whats-new-312",
