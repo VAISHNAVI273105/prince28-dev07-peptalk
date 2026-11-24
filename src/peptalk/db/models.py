@@ -2,21 +2,23 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 from typing import Any
 
 from sqlalchemy import (
     CheckConstraint,
     Date,
+    DateTime,
     ForeignKey,
     Index,
     Integer,
     String,
     Text,
+    func,
     text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship, synonym
 
 from peptalk.db.base import Base
 
@@ -49,6 +51,9 @@ class Document(Base):
         server_default=text("'{}'::jsonb"),
     )
 
+    external_id = synonym("id")
+    metadata_ = synonym("document_metadata")
+
     pages: Mapped[list[Page]] = relationship(
         back_populates="document",
         cascade="all, delete-orphan",
@@ -74,6 +79,8 @@ class Page(Base):
     )
     page_no: Mapped[int] = mapped_column(Integer, primary_key=True)
     text: Mapped[str] = mapped_column(Text, nullable=False)
+    # The section path this page starts in, e.g. ["Fever", "Dengue"]: used for citations.
+    headings: Mapped[list[str]] = mapped_column(JSONB, server_default="[]")
 
     document: Mapped[Document] = relationship(back_populates="pages")
 
@@ -82,3 +89,21 @@ class Page(Base):
 
     def __str__(self) -> str:
         return f"{self.doc_id}#p{self.page_no}"
+
+
+class ParseFailure(Base):
+    """The dead-letter table: one row per raw file we could not parse, with the reason."""
+
+    __tablename__ = "parse_failures"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    path: Mapped[str] = mapped_column(Text, unique=True)  # data/raw/<source>/<file>
+    sha256: Mapped[str] = mapped_column(String(64))
+    source_url: Mapped[str | None] = mapped_column(Text)
+    reason: Mapped[str] = mapped_column(String(40), index=True)  # no_text_layer, corrupt, ...
+    detail: Mapped[str] = mapped_column(Text, server_default="")
+    attempts: Mapped[int] = mapped_column(server_default="1")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )

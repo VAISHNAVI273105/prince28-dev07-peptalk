@@ -631,3 +631,38 @@ Smoke test passed
 
 ### One thing that went wrong today, and how I fixed it
 Door 2 (`scripts/fetch.py repo`) failed initially because `data/raw/peps` already existed from Door 1 HTML downloads. I separated the web-scraped PEP HTML sources into `peps-web` so `data/raw/peps` could cleanly host the shallow sparse Git checkout of `python/peps`.
+
+## D07 · Parsing my corpus
+
+- Manifest count: 777
+- Parsed count: 777
+- Failed count: 0
+- Pages: 5,670
+- Failure breakdown: None (0 failures; all 777 files successfully parsed into PostgreSQL)
+
+### Parser comparison
+
+<!-- parsers:start -->
+| File | Parsers (A / B) | Pages | A found | B found | Time (A / B) | Better, why |
+|---|---|---|---|---|---|---|
+| 3-13-e9820dbd.html | trafilatura / strip tags | 46 | 117,934 chars, 106 headings, 0 tables | 121,177 chars, 0 headings, 0 tables | 1.49 s / 0.05 s | Trafilatura: extracts 106 section headings, strips navigation & footer junk |
+| 3-12-d05666e0.html | trafilatura / strip tags | 40 | 103,859 chars, 5 headings, 0 tables | 109,064 chars, 3 headings, 0 tables | 1.05 s / 0.04 s | Trafilatura: drops cookie banner and sidebar links, clean markdown structure |
+| 3-11-92b1f745.html | trafilatura / strip tags | 29 | 75,818 chars, 84 headings, 2 tables | 85,833 chars, 6 headings, 0 tables | 0.60 s / 0.04 s | Trafilatura: preserves 2 markdown tables and 84 headings for citation path |
+| 3-10-59b2a4e2.html | trafilatura / strip tags | 27 | 75,181 chars, 23 headings, 0 tables | 82,096 chars, 4 headings, 0 tables | 0.56 s / 0.04 s | Trafilatura: clean article body without menu or site-wide search clutter |
+| pep-0703-0e3e8d11.html | trafilatura / strip tags | 28 | 75,270 chars, 29 headings, 1 tables | 84,937 chars, 0 headings, 0 tables | 0.21 s / 0.03 s | Trafilatura: extracts GIL benchmark tables and structured headings |
+| pep-0008-b7a3e383.html | trafilatura / strip tags | 15 | 43,434 chars, 42 headings, 0 tables | 46,554 chars, 52 headings, 0 tables | 0.24 s / 0.02 s | Trafilatura: preserves PEP code blocks and removes website chrome |
+| pep-0557-64f738b3.html | trafilatura / strip tags | 13 | 32,282 chars, 27 headings, 0 tables | 35,280 chars, 0 headings, 0 tables | 0.25 s / 0.01 s | Trafilatura: generates exact section paths like Specification > Field objects |
+| pep-0701-c8a6e74b.html | trafilatura / strip tags | 11 | 27,766 chars, 7 headings, 0 tables | 29,161 chars, 3 headings, 0 tables | 0.11 s / 0.01 s | Trafilatura: drops footer and sidebar navigation noise |
+| pep-0634-0d113cce.html | trafilatura / strip tags | 8 | 21,594 chars, 11 headings, 0 tables | 22,582 chars, 0 headings, 0 tables | 0.09 s / 0.01 s | Trafilatura: structural pattern matching syntax retained with headings |
+| pep-0604-a235c853.html | trafilatura / strip tags | 2 | 5,813 chars, 15 headings, 0 tables | 7,380 chars, 10 headings, 0 tables | 0.07 s / 0.00 s | Trafilatura: clean type union examples with accurate section hierarchy |
+<!-- parsers:end -->
+
+### Reading our own pages check
+
+- **Titles**: Verified in Neon PostgreSQL; documents display real human-readable titles (e.g. `PEP 557 – Data Classes`, `What’s New In Python 3.13`, `Introducing Abstract Base Classes`).
+- **Heading paths**: Verified on page 2+ across documents; `headings` tracks the active section hierarchy (e.g. `['PEP 557 – Data Classes', 'Specification', 'Frozen instances']` and `['Specification', 'Overloading isinstance() and issubclass()']`).
+- **Clean text**: Text reads like standard technical documentation; code blocks and ReST/Markdown tables are preserved while headers, footers, scripts, and cookie banners are stripped.
+
+### One thing that went wrong today, and how I fixed it
+
+In raw reStructuredText PEP files, PEP metadata headers (`Title: ...`, `Author: ...`) precede the body, causing the first detected section rule to be `# Abstract`. Initially, this led to several PEP documents being titled "Abstract" instead of their real title. I updated `parse_text` to extract the RFC 2822 `Title: ...` header field and updated `finish()` to prioritize meaningful document titles over generic section labels ("Abstract", "Contents").

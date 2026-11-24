@@ -1,7 +1,7 @@
 """Database foundation for PEPTalk."""
 
 from peptalk.db.base import Base
-from peptalk.db.models import Document, Page
+from peptalk.db.models import Document, Page, ParseFailure
 from peptalk.db.repository import (
     DocumentRepository,
     DocumentRepositoryProtocol,
@@ -27,6 +27,7 @@ __all__ = [
     "DocumentRepositoryProtocol",
     "DocumentStoreAdapter",
     "Page",
+    "ParseFailure",
     "create_async_db_engine",
     "create_async_session_factory",
     "dispose_engine",

@@ -24,3 +24,12 @@ def client():
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def database_url():
+    """Integration test database connection URL. Skips if TEST_DATABASE_URL is not set."""
+    url = os.getenv("TEST_DATABASE_URL")
+    if not url:
+        pytest.skip("TEST_DATABASE_URL is not set; skipping live integration tests.")
+    return url

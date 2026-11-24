@@ -1,7 +1,8 @@
-from sqlalchemy import CheckConstraint, String, Text, inspect
+from sqlalchemy import CheckConstraint, DateTime, String, Text, inspect
 from sqlalchemy.dialects.postgresql import JSONB
 
 from peptalk.db import Base, Document, Page
+from peptalk.db.models import ParseFailure
 
 
 def test_document_table_and_required_columns():
@@ -56,11 +57,33 @@ def test_page_table_columns_and_composite_primary_key():
     table = Page.__table__
 
     assert table.name == "pages"
-    assert set(table.columns) == {table.c.doc_id, table.c.page_no, table.c.text}
+    assert set(table.columns) == {table.c.doc_id, table.c.page_no, table.c.text, table.c.headings}
     assert isinstance(table.c.doc_id.type, String)
     assert isinstance(table.c.text.type, Text)
     assert not table.c.text.nullable
+    assert isinstance(table.c.headings.type, JSONB)
     assert {column.name for column in table.primary_key.columns} == {"doc_id", "page_no"}
+
+
+def test_parse_failure_table_columns():
+    table = ParseFailure.__table__
+
+    assert table.name == "parse_failures"
+    assert {col.name for col in table.columns} == {
+        "id",
+        "path",
+        "sha256",
+        "source_url",
+        "reason",
+        "detail",
+        "attempts",
+        "created_at",
+        "updated_at",
+    }
+    assert table.c.id.primary_key
+    assert table.c.path.unique
+    assert isinstance(table.c.reason.type, String)
+    assert isinstance(table.c.created_at.type, DateTime)
 
 
 def test_page_document_foreign_key_cascades_on_delete():
