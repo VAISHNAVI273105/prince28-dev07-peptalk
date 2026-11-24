@@ -36,6 +36,8 @@ dependencies = [
     "httpx>=0.28.1",
     "protego>=0.7.0",
     "pypdf>=7.1.1",
+    "pymupdf>=1.26,<2",
+    "trafilatura>=2.4.0",
 ]
 
 [project.urls]

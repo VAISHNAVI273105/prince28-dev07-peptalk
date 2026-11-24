@@ -13,10 +13,11 @@ from peptalk.db.models import Document, Page
 
 
 def test_base_metadata_includes_documents_and_pages():
-    """Verify Base metadata registers the Document and Page model tables."""
+    """Verify Base metadata registers the Document, Page, and ParseFailure model tables."""
     table_names = set(Base.metadata.tables.keys())
     assert "documents" in table_names
     assert "pages" in table_names
+    assert "parse_failures" in table_names
     assert target_metadata is Base.metadata
 
 

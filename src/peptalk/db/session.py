@@ -235,3 +235,16 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
     """
     async with session_scope() as session:
         yield session
+
+
+def make_engine(
+    settings_or_url: Settings | str | SecretStr | None = None, **kwargs: Any
+) -> AsyncEngine:
+    """Convenience alias for create_async_db_engine accepting Settings or URL."""
+    url = settings_or_url.database_url if isinstance(settings_or_url, Settings) else settings_or_url
+    return create_async_db_engine(url, **kwargs)
+
+
+def make_sessionmaker(engine: AsyncEngine) -> async_sessionmaker[AsyncSession]:
+    """Convenience alias for create_async_session_factory."""
+    return create_async_session_factory(engine)
