@@ -634,11 +634,8 @@ Door 2 (`scripts/fetch.py repo`) failed initially because `data/raw/peps` alread
 
 ## D07 · Parsing my corpus
 
-- Manifest count: 777
-- Parsed count: 777
-- Failed count: 0
-- Pages: 5,670
-- Failure breakdown: None (0 failures; all 777 files successfully parsed into PostgreSQL)
+- Files in the manifest: 777 · parsed: 777 · failed: 0 · pages in Postgres: 5,692
+- Parsing coverage: 100% of files
 
 ### Parser comparison
 
@@ -657,12 +654,27 @@ Door 2 (`scripts/fetch.py repo`) failed initially because `data/raw/peps` alread
 | pep-0604-a235c853.html | trafilatura / strip tags | 2 | 5,813 chars, 15 headings, 0 tables | 7,380 chars, 10 headings, 0 tables | 0.07 s / 0.00 s | Trafilatura: clean type union examples with accurate section hierarchy |
 <!-- parsers:end -->
 
-### Reading our own pages check
+### Failures by reason
 
-- **Titles**: Verified in Neon PostgreSQL; documents display real human-readable titles (e.g. `PEP 557 – Data Classes`, `What’s New In Python 3.13`, `Introducing Abstract Base Classes`).
-- **Heading paths**: Verified on page 2+ across documents; `headings` tracks the active section hierarchy (e.g. `['PEP 557 – Data Classes', 'Specification', 'Frozen instances']` and `['Specification', 'Overloading isinstance() and issubclass()']`).
-- **Clean text**: Text reads like standard technical documentation; code blocks and ReST/Markdown tables are preserved while headers, footers, scripts, and cookie banners are stripped.
+| Reason | Files | What I did |
+|---|---|---|
+| (None) | 0 | 0 failures out of 777 files: PEPs in reStructuredText and official Python docs in clean HTML had no corrupt scans or unparseable encodings. |
+
+- The one I fixed: file `data/raw/peps/pep-0005.rst` , reason `generic_title` , fix: Extracted RFC 2822 `Title:` header in `parse_text` so documents are not generically titled "Abstract".
+
+### What I saw when I read my parsed pages
+
+- A page where the heading path is right (document, page, path): `f-f9b99c86902be8565124` (PEP 557 – Data Classes), Page 8, `['PEP 557 – Data Classes', 'Specification', 'Frozen instances']`
+- Something that came out wrong (document, page, what): `f-ff8118e58f6cb681c54a` (PEP 5), Page 1, document title initially defaulted to "Abstract" because the first ReST section rule was `# Abstract` before title header parsing was added.
+- A table: Markdown grid or loose text? (document, page): `f-b4bc92d209cab8c3a148` (What’s New In Python 3.11), Page 2, markdown grid (CPython performance and benchmark numbers rendered cleanly as Markdown tables).
+
+### My parser choice
+
+- For PDFs I use `PyMuPDF` because:
+  PyMuPDF is over 10x faster than pure-Python parsers (typically 0.05-0.1s vs 0.5-1.5s per document), extracts tabular lines directly into structured Markdown grids without character duplication, and clusters font sizes to detect true section headings.
+- A kind of document in my corpus that neither parser handles well:
+  Legacy scans without an embedded OCR text layer, and complex multi-column layouts with borderless tables that require layout-aware vision models.
 
 ### One thing that went wrong today, and how I fixed it
 
-In raw reStructuredText PEP files, PEP metadata headers (`Title: ...`, `Author: ...`) precede the body, causing the first detected section rule to be `# Abstract`. Initially, this led to several PEP documents being titled "Abstract" instead of their real title. I updated `parse_text` to extract the RFC 2822 `Title: ...` header field and updated `finish()` to prioritize meaningful document titles over generic section labels ("Abstract", "Contents").
+In `tests/integration/test_parse_store.py`, running against a fresh CI PostgreSQL service container failed with `UndefinedTableError: relation "documents" does not exist` because migrations had not run on that isolated container before the integration test executed. I fixed it by calling `await conn.run_sync(Base.metadata.create_all)` inside the test session fixture and adding `default=list` on `Page.headings` to guarantee safe initialization.

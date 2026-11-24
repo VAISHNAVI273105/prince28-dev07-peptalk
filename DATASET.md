@@ -4,6 +4,7 @@ Answers modern Python questions from the PEPs and CPython 'What's New' pages, wi
 
 - **Start target:** Final + Active PEPs and What's New 3.10-3.13
 - **Full target:** All PEPs + What's New 3.8-latest (1,500+ documents)
+- **Parsing coverage:** 100% of files (777/777 parsed into PostgreSQL, 0 failed, 5,692 pages)
 - **Collected by:** `scripts/fetch.py` as `examate-student-bot` (https://github.com/VAISHNAVI273105/prince28-dev07-peptalk): robots.txt respected, at most 4 requests at once, 0.5 s between requests to one site.
 
 ## Where the documents come from
