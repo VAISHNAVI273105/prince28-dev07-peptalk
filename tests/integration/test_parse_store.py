@@ -4,6 +4,7 @@ import pytest
 from sqlalchemy import func, select
 
 from peptalk.config import Settings
+from peptalk.db.base import Base
 from peptalk.db.models import Document, Page, ParseFailure
 from peptalk.db.session import make_engine, make_sessionmaker
 from peptalk.ingest.parse import ParsedDoc, ParsedPage, ParseError
@@ -31,6 +32,8 @@ PARSED = ParsedDoc(
 @pytest.fixture
 async def session(database_url):
     engine = make_engine(Settings(app_env="ci", database_url=database_url, _env_file=None))
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
     async with make_sessionmaker(engine)() as db:
         await db.execute(Document.__table__.delete())
         await db.execute(ParseFailure.__table__.delete())

@@ -80,7 +80,7 @@ class Page(Base):
     page_no: Mapped[int] = mapped_column(Integer, primary_key=True)
     text: Mapped[str] = mapped_column(Text, nullable=False)
     # The section path this page starts in, e.g. ["Fever", "Dengue"]: used for citations.
-    headings: Mapped[list[str]] = mapped_column(JSONB, server_default="[]")
+    headings: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default="[]")
 
     document: Mapped[Document] = relationship(back_populates="pages")
 
