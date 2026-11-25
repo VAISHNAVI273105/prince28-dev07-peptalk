@@ -26,3 +26,16 @@ class DocumentListResponse(BaseModel):
     limit: int = Field(ge=1, le=100, description="Maximum items requested.")
     offset: int = Field(ge=0, description="Number of items skipped from start.")
     items: list[DocumentResponse] = Field(description="List of documentation items.")
+
+
+class PageResponse(BaseModel):
+    """Schema representing an individual page of a document with citation section paths."""
+
+    model_config = ConfigDict(extra="allow")
+
+    document_id: str = Field(description="Parent document identifier.")
+    page_no: int = Field(ge=1, description="1-indexed sequence page number.")
+    text: str = Field(description="Clean text content of the page.")
+    headings: list[str] = Field(
+        default_factory=list, description="Section hierarchy path active at page start."
+    )

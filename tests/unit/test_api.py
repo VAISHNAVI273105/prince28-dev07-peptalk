@@ -209,3 +209,37 @@ def test_list_documents_negative_offset_returns_422(client):
     """Verify negative offset triggers standard 422 validation error."""
     response = client.get("/v1/documents?offset=-1")
     assert response.status_code == 422
+
+
+def test_get_document_page_success(client):
+    """Verify GET /v1/documents/{id}/pages returns page content and section headings."""
+    response = client.get("/v1/documents/pep-0634/pages?page_no=1")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["document_id"] == "pep-0634"
+    assert data["page_no"] == 1
+    assert "text" in data
+    assert isinstance(data["headings"], list)
+
+
+def test_get_document_page_missing_document_returns_404_problem_details(client):
+    """Verify non-existent document ID returns 404 in RFC 9457 problem details format."""
+    response = client.get("/v1/documents/non-existent-doc/pages?page_no=1")
+    assert response.status_code == 404
+    assert response.headers["content-type"].startswith("application/problem+json")
+    assert "No document with id 'non-existent-doc'" in response.json()["detail"]
+
+
+def test_get_document_page_missing_page_returns_404_problem_details(client):
+    """Verify requesting a page that does not exist returns 404 problem details."""
+    response = client.get("/v1/documents/pep-0634/pages?page_no=999")
+    assert response.status_code == 404
+    assert response.headers["content-type"].startswith("application/problem+json")
+    assert "Page 999 not found" in response.json()["detail"]
+
+
+def test_get_document_page_blank_id_returns_400_problem_details(client):
+    """Verify blank document_id returns 400 problem details."""
+    response = client.get("/v1/documents/%20/pages?page_no=1")
+    assert response.status_code == 400
+    assert response.headers["content-type"].startswith("application/problem+json")

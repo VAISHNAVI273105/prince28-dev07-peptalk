@@ -8,7 +8,7 @@ from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from peptalk.db.models import Document
+from peptalk.db.models import Document, Page
 
 
 def document_to_dict(doc: Document) -> dict[str, Any]:
@@ -118,6 +118,10 @@ class DocumentRepositoryProtocol(Protocol):
         offset: int = 0,
     ) -> tuple[list[dict[str, Any]], int]:
         """Search documents by title or identifier using case-insensitive matching."""
+        ...
+
+    async def get_page(self, document_id: str, page_no: int) -> dict[str, Any] | None:
+        """Retrieve a specific page for a document by document ID and page number."""
         ...
 
 
@@ -258,6 +262,20 @@ class DocumentRepository:
         docs = result.scalars().all()
         return [document_to_dict(d) for d in docs], total
 
+    async def get_page(self, document_id: str, page_no: int) -> dict[str, Any] | None:
+        """Retrieve a specific page for a document by document ID and page number."""
+        stmt = select(Page).where(Page.doc_id == document_id, Page.page_no == page_no)
+        result = await self.session.execute(stmt)
+        page = result.scalar_one_or_none()
+        if page is None:
+            return None
+        return {
+            "document_id": page.doc_id,
+            "page_no": page.page_no,
+            "text": page.text,
+            "headings": list(page.headings or []),
+        }
+
 
 class DocumentStoreAdapter:
     """Adapter wrapping DocumentStore to match DocumentRepositoryProtocol."""
@@ -340,3 +358,17 @@ class DocumentStoreAdapter:
         if total == 0 or offset >= total:
             return [], total
         return matching[offset : offset + limit], total
+
+    async def get_page(self, document_id: str, page_no: int) -> dict[str, Any] | None:
+        """Retrieve a page from in-memory document store."""
+        doc = self.store.get_by_id(document_id)
+        if doc is None:
+            return None
+        if page_no == 1:
+            return {
+                "document_id": document_id,
+                "page_no": 1,
+                "text": str(doc.get("summary", "")),
+                "headings": [],
+            }
+        return None
