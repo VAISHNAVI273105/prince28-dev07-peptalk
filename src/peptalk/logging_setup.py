@@ -5,6 +5,8 @@ from datetime import UTC, datetime
 
 from peptalk.api.middleware import request_id_var
 
+request_id_ctx = request_id_var
+
 
 class JSONFormatter(logging.Formatter):
     """Format application logs as structured JSON."""
