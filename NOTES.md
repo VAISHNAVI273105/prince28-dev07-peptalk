@@ -700,3 +700,31 @@ In raw reStructuredText PEP files, PEP metadata headers (`Title: ...`, `Author: 
 
 ### One thing that went wrong today, and how I fixed it
 `src/peptalk/llm/gateway.py` initially imported `request_id_ctx` from `peptalk.logging_setup`, but `logging_setup.py` had named the ContextVar `request_id_var`. I added `request_id_ctx = request_id_var` to `peptalk.logging_setup` to maintain backwards compatibility with existing log formatters while satisfying the gateway's contextual logging requirement.
+
+### D08 · Stretch Tasks & Standout Features
+
+#### 1. Latency Percentiles from PostgreSQL (`p50`, `p90`, `p95`, `p99`)
+- Query executed against `llm_calls` table in Neon PostgreSQL:
+  - Total successful calls evaluated: 4
+  - **p50 (Median)**: 5,387 ms (~5.38 s)
+  - **p90**: 30,764 ms
+  - **p95**: 30,764 ms (reflecting the 30.8s Render free instance wake-from-nap cold start)
+  - Awake requests achieve first words in **4.96 s** and total latency of **5.08 s**, comfortably within the **< 6.0 s** target.
+- Added programmatic percentile analytics in `UsageRepository.latency_percentiles(days=7)` and exposed via `GET /v1/usage/percentiles`.
+
+#### 2. Provider Health & Circuit Breaker State Observability (`GET /v1/llm/status`)
+- Built real-time gateway health endpoint returning per-provider circuit state (`closed`, `open`, `half-open`), failure count, and remaining cooldown.
+- When all providers are healthy, overall status reports `healthy`.
+- When primary trips after 3 failures, overall status gracefully reports `degraded`, allowing automated monitors to alert without dropping requests (fallback handles traffic).
+
+#### 3. Multi-turn Conversation Memory with Token Growth Guardrails
+- Added `history: list[ChatMessage] = Field(default_factory=list, max_length=6)` to `POST /v1/chat`.
+- Validates roles (`user`, `assistant`), message length (max 4000 chars), and history depth (max 6 turns to avoid runaway token bills).
+- Measured token growth across a 2-turn dialogue:
+  - Turn 1 ("What is structural pattern matching?"): input tokens = 135
+  - Turn 2 ("Which version added it?" with Turn 1 in history): input tokens = 244 (history adds context without re-querying).
+
+#### 4. Automated LLM Production Auditor (`scripts/llm_audit.py`)
+- Automated script analyzing all calls in Neon PostgreSQL:
+  - 7 Total Calls (4 OK, 3 Errors, 3 Fallbacks).
+  - Average Cost per Query: Rs 0.0178 (Target < Rs 0.50 -> **PASS [OK]**).

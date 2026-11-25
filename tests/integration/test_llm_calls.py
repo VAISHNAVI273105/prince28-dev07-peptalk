@@ -49,3 +49,33 @@ async def test_record_and_query_daily_usage(session):
     assert today["cost_inr"] == 0.045
     assert today["fallbacks"] == 0
     assert today["errors"] == 0
+
+
+async def test_query_latency_percentiles(session):
+    # Add multiple calls with varying latencies
+    calls = [
+        LlmCall(
+            request_id=f"req-p-{i}",
+            provider="gemini",
+            model="gemini-3.8-flash",
+            purpose="chat",
+            status="ok",
+            tokens_in=50,
+            tokens_out=20,
+            latency_ms=lat,
+            cost_inr=0.01,
+            fallback_used=False,
+        )
+        for i, lat in enumerate([500, 1000, 1500, 2000, 3000])
+    ]
+    session.add_all(calls)
+    await session.commit()
+
+    repo = UsageRepository(session)
+    stats = await repo.latency_percentiles(7)
+
+    assert stats["count"] == 5
+    assert stats["min_ms"] == 500
+    assert stats["max_ms"] == 3000
+    assert stats["p50_ms"] == 1500.0
+    assert stats["meets_p95_target"] is True

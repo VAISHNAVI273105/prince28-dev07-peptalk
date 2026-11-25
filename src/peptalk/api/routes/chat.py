@@ -1,10 +1,10 @@
-"""POST /v1/chat (streaming) and GET /v1/usage (what the model calls cost)."""
+"""POST /v1/chat (streaming), GET /v1/usage, and GET /v1/llm/status."""
 
 import json
 from collections.abc import AsyncIterator
 from dataclasses import asdict
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
@@ -22,9 +22,15 @@ def load_prompt(directory: Path, name: str = PROMPT_VERSION) -> str:
     return (directory / f"{name}.md").read_text(encoding="utf-8").strip()
 
 
+class ChatMessage(BaseModel):
+    role: Literal["user", "assistant", "system"]
+    content: str = Field(min_length=1, max_length=4000)
+
+
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=4000)
     stream: bool = True
+    history: list[ChatMessage] = Field(default_factory=list, max_length=6)
 
 
 def sse(data: dict, event: str = "") -> str:
@@ -39,10 +45,13 @@ def summary(result: LLMResult) -> dict:
 
 @router.post("/chat")
 async def chat(body: ChatRequest, request: Request, gateway: GatewayDep):
-    messages = [
-        {"role": "system", "content": request.app.state.system_prompt},
-        {"role": "user", "content": body.message},
+    messages: list[dict[str, str]] = [
+        {"role": "system", "content": request.app.state.system_prompt}
     ]
+    for msg in body.history:
+        messages.append({"role": msg.role, "content": msg.content})
+    messages.append({"role": "user", "content": body.message})
+
     try:
         if not body.stream:
             result = await gateway.generate(messages, prompt_version=PROMPT_VERSION)
@@ -71,7 +80,57 @@ async def chat(body: ChatRequest, request: Request, gateway: GatewayDep):
 
 @router.get("/usage")
 async def usage(repo: UsageDep, days: Annotated[int, Query(ge=1, le=90)] = 7) -> dict:
-    """Tokens and rupees per day, from the llm_calls table."""
+    """Tokens, rupees per day, and latency percentiles from the llm_calls table."""
     rows = await repo.by_day(days)
+    latency = await repo.latency_percentiles(days)
     total = round(sum(row["cost_inr"] for row in rows), 4)
-    return {"days": rows, "total_cost_inr": total, "calls": sum(row["calls"] for row in rows)}
+    return {
+        "days": rows,
+        "total_cost_inr": total,
+        "calls": sum(row["calls"] for row in rows),
+        "latency": latency,
+    }
+
+
+@router.get("/usage/percentiles")
+async def usage_percentiles(repo: UsageDep, days: Annotated[int, Query(ge=1, le=90)] = 7) -> dict:
+    """Latency distribution (p50, p90, p95, p99) against the Day 1 non-functional target."""
+    return await repo.latency_percentiles(days)
+
+
+@router.get("/llm/status")
+async def llm_status(gateway: GatewayDep) -> dict:
+    """Live health, failure counts, and circuit breaker states for all LLM providers."""
+    providers_status: list[dict] = []
+    any_healthy = False
+    all_healthy = True
+
+    for provider in gateway.providers:
+        breaker = gateway.breakers.get(provider.name)
+        state = breaker.state if breaker else "unknown"
+        failures = breaker.failures if breaker else 0
+        cooldown = breaker.cooldown if breaker else 0.0
+        is_healthy = state != "open"
+
+        if is_healthy:
+            any_healthy = True
+        else:
+            all_healthy = False
+
+        providers_status.append(
+            {
+                "name": provider.name,
+                "model": provider.model,
+                "state": state,
+                "healthy": is_healthy,
+                "failures": failures,
+                "cooldown_seconds": cooldown,
+            }
+        )
+
+    overall = "healthy" if all_healthy else ("degraded" if any_healthy else "unavailable")
+    return {
+        "status": overall,
+        "providers_count": len(providers_status),
+        "providers": providers_status,
+    }

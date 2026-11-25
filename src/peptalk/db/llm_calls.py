@@ -86,3 +86,44 @@ class UsageRepository:
                 }
             )
         return rows
+
+    async def latency_percentiles(self, days: int = 7) -> dict[str, Any]:
+        """Compute p50, p90, p95, and p99 latency in milliseconds for successful calls."""
+        cutoff = datetime.now(UTC) - timedelta(days=days)
+
+        stmt = (
+            select(LlmCall.latency_ms)
+            .where(LlmCall.status == "ok", LlmCall.created_at >= cutoff)
+            .order_by(LlmCall.latency_ms.asc())
+        )
+
+        result = await self.session.execute(stmt)
+        latencies = [int(r[0]) for r in result.all()]
+
+        if not latencies:
+            return {
+                "count": 0,
+                "min_ms": 0,
+                "max_ms": 0,
+                "p50_ms": 0.0,
+                "p90_ms": 0.0,
+                "p95_ms": 0.0,
+                "p99_ms": 0.0,
+                "meets_p95_target": True,
+            }
+
+        def _pct(arr: list[int], q: float) -> float:
+            idx = int(round(q * (len(arr) - 1)))
+            return float(arr[min(max(idx, 0), len(arr) - 1)])
+
+        p95 = _pct(latencies, 0.95)
+        return {
+            "count": len(latencies),
+            "min_ms": latencies[0],
+            "max_ms": latencies[-1],
+            "p50_ms": _pct(latencies, 0.50),
+            "p90_ms": _pct(latencies, 0.90),
+            "p95_ms": p95,
+            "p99_ms": _pct(latencies, 0.99),
+            "meets_p95_target": p95 <= 6000.0,  # Day 1 target: p95 under 6.0 s
+        }
