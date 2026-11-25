@@ -23,16 +23,32 @@ def main() -> None:
         action="store_true",
         help="Use non-streaming mode and print raw JSON output",
     )
+    parser.add_argument(
+        "--history",
+        default=None,
+        help="JSON string of conversation history list or path to JSON file",
+    )
     args = parser.parse_args()
 
     endpoint = f"{args.url.rstrip('/')}/v1/chat"
+
+    history_list: list[dict] = []
+    if args.history:
+        try:
+            from pathlib import Path
+
+            p = Path(args.history)
+            raw = p.read_text(encoding="utf-8") if p.exists() else args.history
+            history_list = json.loads(raw)
+        except Exception as err:
+            print(f"Warning: could not parse history JSON: {err}", file=sys.stderr)
 
     if args.json:
         try:
             with httpx.Client(timeout=60.0) as client:
                 resp = client.post(
                     endpoint,
-                    json={"message": args.message, "stream": False},
+                    json={"message": args.message, "stream": False, "history": history_list},
                 )
             if resp.status_code != 200:
                 print(f"Error {resp.status_code}: {resp.text}", file=sys.stderr)
@@ -66,7 +82,7 @@ def main() -> None:
             client.stream(
                 "POST",
                 endpoint,
-                json={"message": args.message, "stream": True},
+                json={"message": args.message, "stream": True, "history": history_list},
             ) as response,
         ):
             if response.status_code != 200:

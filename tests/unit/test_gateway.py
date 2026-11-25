@@ -350,3 +350,106 @@ async def test_recorder_failure_does_not_break_answer(noop_sleep):
 
     result = await gateway.generate([{"role": "user", "content": "Hi"}])
     assert result.text == "Still answers cleanly"
+
+
+# 20. Circuit breaker cooldown boundary check
+def test_circuit_breaker_boundary_cooldown_not_expired():
+    clock_time = 100.0
+
+    def mock_clock() -> float:
+        return clock_time
+
+    cb = CircuitBreaker(threshold=2, cooldown=30.0, clock=mock_clock)
+    cb.failure()
+    cb.failure()
+    assert cb.state == "open"
+    assert cb.allow() is False
+
+    # Just 0.1s before cooldown expires
+    clock_time += 29.9
+    assert cb.state == "open"
+    assert cb.allow() is False
+
+    # Exactly reaches cooldown
+    clock_time += 0.1
+    assert cb.state == "half-open"
+    assert cb.allow() is True
+
+
+# 21. Single failure does not trip threshold of 3
+def test_circuit_breaker_single_failure_does_not_open():
+    cb = CircuitBreaker(threshold=3, cooldown=30.0)
+    cb.failure()
+    assert cb.state == "closed"
+    assert cb.failures == 1
+    assert cb.allow() is True
+
+
+# 22. Cost calculations for all 4 listed models
+def test_cost_inr_all_supported_models():
+    # gemini-3.8-flash: (0.75, 3.75)
+    c1 = cost_inr("gemini-3.8-flash", 1_000_000, 1_000_000, 95.0)
+    assert c1 == 427.5
+
+    # gemini-3.5-flash-lite: (0.30, 2.50)
+    c2 = cost_inr("gemini-3.5-flash-lite", 1_000_000, 1_000_000, 95.0)
+    assert c2 == round((0.30 + 2.50) * 95.0, 6)
+
+    # openai/gpt-oss-20b: (0.075, 0.30)
+    c3 = cost_inr("openai/gpt-oss-20b", 1_000_000, 1_000_000, 95.0)
+    assert c3 == round((0.075 + 0.30) * 95.0, 6)
+
+    # openai/gpt-oss-120b: (0.15, 0.60)
+    c4 = cost_inr("openai/gpt-oss-120b", 1_000_000, 1_000_000, 95.0)
+    assert c4 == round((0.15 + 0.60) * 95.0, 6)
+
+
+# 23. Stream handles empty chunks gracefully
+@pytest.mark.asyncio
+async def test_stream_empty_chunk_handled():
+    provider = FakeLLM("gemini", "gemini-3.8-flash", [""])
+    gateway = LLMGateway([provider])
+
+    chunks = []
+    async for item in gateway.stream([{"role": "user", "content": "Hi"}]):
+        if isinstance(item, str):
+            chunks.append(item)
+
+    assert chunks == []
+
+
+# 24. Generate passes custom temperature option
+@pytest.mark.asyncio
+async def test_generate_passes_custom_options(noop_sleep):
+    provider = FakeLLM("gemini", "gemini-3.8-flash", ["Cold answer"])
+    gateway = LLMGateway([provider], sleep=noop_sleep)
+
+    result = await gateway.generate(
+        [{"role": "user", "content": "Hi"}],
+        temperature=0.0,
+    )
+    assert result.text == "Cold answer"
+    assert result.attempts == 1
+
+
+# 25. Exponential backoff never exceeds MAX_WAIT
+@pytest.mark.asyncio
+async def test_exponential_backoff_max_wait():
+    from peptalk.llm.gateway import MAX_WAIT
+
+    waited = []
+
+    async def mock_sleep(s: float) -> None:
+        waited.append(s)
+
+    script = [
+        LLMError("429 Rate limit", retryable=True, retry_after=500.0),
+        "Answer after cap",
+    ]
+    provider = FakeLLM("gemini", "gemini-3.8-flash", script)
+    gateway = LLMGateway([provider], sleep=mock_sleep, max_attempts=2)
+
+    result = await gateway.generate([{"role": "user", "content": "Hi"}])
+    assert result.text == "Answer after cap"
+    assert len(waited) == 1
+    assert waited[0] <= MAX_WAIT  # Capped at 20.0s

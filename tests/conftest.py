@@ -25,6 +25,18 @@ class FakeUsageRepo:
     async def by_day(self, days: int = 7) -> list[dict[str, Any]]:
         return self.rows
 
+    async def latency_percentiles(self, days: int = 7) -> dict[str, Any]:
+        return {
+            "count": 1,
+            "min_ms": 1200,
+            "max_ms": 1200,
+            "p50_ms": 1200.0,
+            "p90_ms": 1200.0,
+            "p95_ms": 1200.0,
+            "p99_ms": 1200.0,
+            "meets_p95_target": True,
+        }
+
 
 @pytest.fixture
 def fake_llm() -> FakeLLM:

@@ -78,3 +78,105 @@ def test_system_prompt_has_not_sure_rule():
     assert "I am not sure" in content, (
         "System prompt must contain the 'I am not sure' guideline so the model admits uncertainty"
     )
+
+
+def test_chat_with_history_conversation_turn(client):
+    history = [
+        {"role": "user", "content": "What is Python?"},
+        {"role": "assistant", "content": "Python is a high-level programming language."},
+    ]
+    response = client.post(
+        "/v1/chat",
+        json={"message": "What is PEP 634?", "stream": False, "history": history},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert "answer" in data
+    assert data["provider"] == "fake"
+
+
+def test_chat_history_exceeds_max_items(client):
+    history = [{"role": "user", "content": f"msg {i}"} for i in range(7)]
+    response = client.post(
+        "/v1/chat",
+        json={"message": "Hello", "stream": False, "history": history},
+    )
+    assert response.status_code == 422
+
+
+def test_chat_history_invalid_role(client):
+    history = [{"role": "hacker", "content": "inject"}]
+    response = client.post(
+        "/v1/chat",
+        json={"message": "Hello", "stream": False, "history": history},
+    )
+    assert response.status_code == 422
+
+
+def test_chat_history_empty_content(client):
+    history = [{"role": "user", "content": ""}]
+    response = client.post(
+        "/v1/chat",
+        json={"message": "Hello", "stream": False, "history": history},
+    )
+    assert response.status_code == 422
+
+
+def test_llm_status_endpoint_healthy(client):
+    response = client.get("/v1/llm/status")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "healthy"
+    assert data["providers_count"] >= 1
+    provider = data["providers"][0]
+    assert provider["state"] == "closed"
+    assert provider["healthy"] is True
+    assert provider["failures"] == 0
+
+
+def test_llm_status_endpoint_degraded_when_breaker_open(client):
+    # Trip the breaker on the active provider
+    gateway = client.app.state.gateway
+    for p in gateway.providers:
+        cb = gateway.breakers[p.name]
+        cb.failure()
+        cb.failure()
+        cb.failure()
+
+    response = client.get("/v1/llm/status")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "unavailable"
+    assert data["providers"][0]["healthy"] is False
+
+
+def test_usage_percentiles_endpoint(client):
+    response = client.get("/v1/usage/percentiles?days=7")
+    assert response.status_code == 200
+    data = response.json()
+    assert "p50_ms" in data
+    assert "p95_ms" in data
+    assert "meets_p95_target" in data
+    assert data["meets_p95_target"] is True
+
+
+def test_usage_endpoint_includes_latency(client):
+    response = client.get("/v1/usage?days=7")
+    assert response.status_code == 200
+    data = response.json()
+    assert "latency" in data
+    assert data["latency"]["p95_ms"] > 0
+
+
+def test_chat_streaming_with_history(client):
+    history = [
+        {"role": "user", "content": "First question"},
+        {"role": "assistant", "content": "First answer"},
+    ]
+    response = client.post(
+        "/v1/chat",
+        json={"message": "Follow up question", "stream": True, "history": history},
+    )
+    assert response.status_code == 200
+    assert "text/event-stream" in response.headers.get("content-type", "")
+    assert "data:" in response.text
