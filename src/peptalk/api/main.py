@@ -2,9 +2,13 @@ from fastapi import FastAPI
 
 from peptalk.api.errors import register_exception_handlers
 from peptalk.api.middleware import RequestContextMiddleware
+from peptalk.api.routes.chat import load_prompt
+from peptalk.api.routes.chat import router as chat_router
 from peptalk.api.routes.documents import router as documents_router
 from peptalk.api.routes.health import router as health_router
 from peptalk.config import get_settings
+from peptalk.db.llm_calls import record_call
+from peptalk.llm.gateway import build_gateway
 from peptalk.logging_setup import setup_logging
 
 
@@ -24,6 +28,10 @@ def create_app() -> FastAPI:
             "description": (
                 "Operations for querying, filtering, and retrieving Python PEP and release records."
             ),
+        },
+        {
+            "name": "chat",
+            "description": "Streaming LLM chat completion and token usage metrics.",
         },
     ]
 
@@ -45,7 +53,12 @@ def create_app() -> FastAPI:
 
     register_exception_handlers(app)
 
+    # Attach LLM prompt and gateway to app state
+    app.state.system_prompt = load_prompt(settings.prompts_dir)
+    app.state.gateway = build_gateway(settings, recorder=record_call)
+
     app.include_router(health_router)
     app.include_router(documents_router)
+    app.include_router(chat_router, prefix="/v1")
 
     return app

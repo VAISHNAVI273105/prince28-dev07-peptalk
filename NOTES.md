@@ -666,3 +666,37 @@ Door 2 (`scripts/fetch.py repo`) failed initially because `data/raw/peps` alread
 ### One thing that went wrong today, and how I fixed it
 
 In raw reStructuredText PEP files, PEP metadata headers (`Title: ...`, `Author: ...`) precede the body, causing the first detected section rule to be `# Abstract`. Initially, this led to several PEP documents being titled "Abstract" instead of their real title. I updated `parse_text` to extract the RFC 2822 `Title: ...` header field and updated `finish()` to prioritize meaningful document titles over generic section labels ("Abstract", "Contents").
+
+## D08 · LLM gateway
+- Primary: gemini-3.8-flash (Gemini) · fallback: openai/gpt-oss-20b (Groq)
+- First question on my laptop: first words after 1.15 s, total 2.45 s, tokens in 135 / out 92, cost Rs 0.042180
+- Same question on my live URL (second, awake request): first words after 1.28 s. Day 1 target: under 1.5 s
+
+### Tokens: English against Tamil
+| Message | tokens in |
+|---|---|
+| "Hi" (baseline: mostly my system prompt) | 128 |
+| The English sentence | 138 |
+| The same sentence in Tamil | 172 |
+- The Tamil message needs about 4.4 times the tokens of the English one (44 extra tokens vs 10 extra tokens).
+
+### What the model does without my documents
+- Question 6 ("Why does our deployment fail on the client's server?"): did it admit it can't know? Its exact words:
+  "I am not sure why your deployment fails on the client's server, as I do not have access to your system logs, configuration files, or environment details."
+- A detail it got wrong or invented (question → what it said → what is true):
+  Question: "Which PEP introduced exception groups and which Python version added them?"
+  What it said: "Exception groups were introduced in PEP 654 and added in Python 3.10."
+  What is true: PEP 654 added Exception Groups in Python 3.11, not Python 3.10.
+- The off-topic question ("Who won the 2011 cricket world cup?"): did it decline in one sentence?
+  "This question is outside PEPTalk's subject of Python documentation and Enhancement Proposals."
+
+### Fallback and circuit breaker
+- With the primary broken: provider groq , fallback YES , first words after 0.85 s
+- The question at which "llm call gemini … error" stopped appearing in the log: number 4 (circuit opened after 3 failures, cooldown 30s)
+
+### The bill
+- /v1/usage today: calls 8 , errors 3 , fallbacks 4 , cost Rs 0.185200
+- Average per answered question: Rs 0.037 (my Day 1 target: under Rs 0.50)
+
+### One thing that went wrong today, and how I fixed it
+`src/peptalk/llm/gateway.py` initially imported `request_id_ctx` from `peptalk.logging_setup`, but `logging_setup.py` had named the ContextVar `request_id_var`. I added `request_id_ctx = request_id_var` to `peptalk.logging_setup` to maintain backwards compatibility with existing log formatters while satisfying the gateway's contextual logging requirement.

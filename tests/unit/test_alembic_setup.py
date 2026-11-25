@@ -18,6 +18,7 @@ def test_base_metadata_includes_documents_and_pages():
     assert "documents" in table_names
     assert "pages" in table_names
     assert "parse_failures" in table_names
+    assert "llm_calls" in table_names
     assert target_metadata is Base.metadata
 
 

@@ -1,3 +1,5 @@
+"""Dependencies for FastAPI routes."""
+
 from typing import Annotated
 
 from fastapi import Depends, Request
@@ -5,12 +7,14 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from peptalk.config import Settings, get_settings
+from peptalk.db.llm_calls import UsageRepository
 from peptalk.db.repository import (
     DocumentRepository,
     DocumentRepositoryProtocol,
     DocumentStoreAdapter,
 )
 from peptalk.db.session import get_db_session, session_scope
+from peptalk.llm.gateway import LLMGateway
 from peptalk.store import DocumentStore
 
 
@@ -46,9 +50,28 @@ async def check_database_readiness(
         return False
 
 
+def get_gateway(request: Request) -> LLMGateway:
+    """Dependency provider returning the LLM gateway instance from app state."""
+    return request.app.state.gateway
+
+
+def get_usage_repository(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> UsageRepository:
+    """Dependency provider returning a UsageRepository for metrics queries."""
+    return UsageRepository(session)
+
+
+GatewayDep = Annotated[LLMGateway, Depends(get_gateway)]
+UsageDep = Annotated[UsageRepository, Depends(get_usage_repository)]
+
 __all__ = [
+    "GatewayDep",
+    "UsageDep",
     "check_database_readiness",
     "get_db_session",
     "get_document_repository",
     "get_document_store",
+    "get_gateway",
+    "get_usage_repository",
 ]

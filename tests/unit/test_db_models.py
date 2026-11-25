@@ -2,7 +2,7 @@ from sqlalchemy import CheckConstraint, DateTime, String, Text, inspect
 from sqlalchemy.dialects.postgresql import JSONB
 
 from peptalk.db import Base, Document, Page
-from peptalk.db.models import ParseFailure
+from peptalk.db.models import LlmCall, ParseFailure
 
 
 def test_document_table_and_required_columns():
@@ -114,3 +114,28 @@ def test_document_and_page_relationships_have_delete_cascade_behavior():
     assert document_pages.passive_deletes
     assert page_document.mapper.class_ is Document
     assert page_document.back_populates == "pages"
+
+
+def test_llm_call_table_columns():
+    table = LlmCall.__table__
+
+    assert table.name == "llm_calls"
+    assert {col.name for col in table.columns} == {
+        "id",
+        "request_id",
+        "provider",
+        "model",
+        "purpose",
+        "prompt_version",
+        "status",
+        "error",
+        "tokens_in",
+        "tokens_out",
+        "latency_ms",
+        "cost_inr",
+        "fallback_used",
+        "created_at",
+    }
+    assert table.c.id.primary_key
+    assert isinstance(table.c.provider.type, String)
+    assert isinstance(table.c.created_at.type, DateTime)

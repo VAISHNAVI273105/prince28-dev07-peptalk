@@ -4,7 +4,7 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from peptalk.api.deps import get_document_repository
-from peptalk.api.schemas import DocumentListResponse, DocumentResponse
+from peptalk.api.schemas import DocumentListResponse, DocumentResponse, PageResponse
 from peptalk.db.repository import DocumentRepositoryProtocol
 
 router = APIRouter(prefix="/v1/documents", tags=["documents"])
@@ -145,3 +145,38 @@ async def get_document(
         )
 
     return document
+
+
+@router.get(
+    "/{document_id}/pages",
+    response_model=PageResponse,
+    summary="Get document page by page number",
+    description="Retrieve the text content and heading hierarchy path of a specific document page.",
+    response_description="Page content and section citation headings.",
+)
+async def get_document_page(
+    document_id: str,
+    repo: Annotated[DocumentRepositoryProtocol, Depends(get_document_repository)],
+    page_no: int = Query(default=1, ge=1, description="1-indexed sequence page number."),
+) -> dict[str, Any]:
+    cleaned_id = document_id.strip()
+    if not cleaned_id:
+        raise HTTPException(
+            status_code=400,
+            detail="document_id cannot be blank or whitespace.",
+        )
+
+    if not await repo.exists(cleaned_id):
+        raise HTTPException(
+            status_code=404,
+            detail=f"No document with id '{document_id}'.",
+        )
+
+    page = await repo.get_page(cleaned_id, page_no)
+    if page is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Page {page_no} not found for document '{document_id}'.",
+        )
+
+    return page
