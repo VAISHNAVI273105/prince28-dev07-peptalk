@@ -1,7 +1,7 @@
 import re
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from peptalk.api.deps import get_document_repository
 from peptalk.api.schemas import DocumentListResponse, DocumentResponse, PageResponse
@@ -82,6 +82,7 @@ def validate_filters(
     response_description="A paginated list of matching Python documentation items.",
 )
 async def list_documents(
+    request: Request,
     repo: Annotated[DocumentRepositoryProtocol, Depends(get_document_repository)],
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
@@ -99,6 +100,9 @@ async def list_documents(
         pep_number=pep_number,
     )
 
+    known_keys = {"limit", "offset", "type", "python_version", "status", "pep_number"}
+    extra_filters = {k: v for k, v in request.query_params.items() if k not in known_keys and v}
+
     items, total = await repo.list_documents(
         limit=limit,
         offset=offset,
@@ -106,6 +110,7 @@ async def list_documents(
         python_version=norm_version,
         status=norm_status,
         pep_number=norm_pep,
+        **extra_filters,
     )
 
     return {

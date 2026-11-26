@@ -728,3 +728,49 @@ In raw reStructuredText PEP files, PEP metadata headers (`Title: ...`, `Author: 
 - Automated script analyzing all calls in Neon PostgreSQL:
   - 7 Total Calls (4 OK, 3 Errors, 3 Fallbacks).
   - Average Cost per Query: Rs 0.0178 (Target < Rs 0.50 -> **PASS [OK]**).
+
+---
+
+## D09 · Prompts, Question Router, and Structured Document Extraction
+
+### 1. Question Classification Router (`prompts/classify_v*.md`)
+- Three prompt iterations created:
+  - `classify_v1.md`: Baseline one-sentence router.
+  - `classify_v2.md`: Defined role, explicit scope boundary (PEPs + CPython What's New), data isolation tags (`<question>...</question>`), and strict output constraints.
+  - `classify_v3.md`: Few-shot prompt with 6 representative examples (2 `docs`, 2 `personal`, 2 `off_topic`), isolated from testset questions.
+- Built strict label parser (`parse_label`) forgiving casing and punctuation, rejecting ambiguous multiple labels as `"invalid"`.
+
+### 2. 20-Question Prompt Test Set (`eval/prompt_testset.jsonl`)
+- 20 balanced evaluation questions:
+  - Lines 1-5 & 7-10: `docs` questions grounded in [docs/QUESTIONS.md](docs/QUESTIONS.md) (PEP 654 exception groups, PEP 695 type parameter syntax, PEP 703 free-threading, Python 3.13 upgrades).
+  - Lines 6 & 11-14: `personal` questions modeled on the Chennai startup upgrading from 3.9 to 3.13 persona (auth service errors, private codebase typing migration, EC2 speed predictions).
+  - Lines 15-19: `off_topic` questions (tyre repair, dog names, movies, prompt injection attempts).
+  - Line 20: Hardest edge case (`personal`) inquiring about private billing module changes triggered by PEP 703 GIL removal.
+- Verified zero leaks between `eval/prompt_testset.jsonl` and `prompts/classify_v3.md` (`find_leaks()` returned `[]`).
+
+### 3. Structured Output Contract (`DocMeta`) & Repair Loop
+- `DocMeta` schema enforces `extra="forbid"` with 5 common fields (`doc_kind`, `year`, `language`, `summary`, `topics`) and 5 PEP domain fields (`pep_number`, `status`, `type`, `python_version`, `created`).
+- Topics automatically lowercased and deduplicated via `_tidy` validator.
+- Automated extraction repair loop validated with `FakeLLM` and tested live on Neon PostgreSQL.
+
+### 4. Corpus Extraction Metrics
+- **5 Trial Documents**:
+  - `prompt=v1 pending=5 ok=5 repaired=0 failed=0`
+  - Cost: Rs 0.5085 | Duration: 39s
+  - Sample extracted records:
+    - *Require OpenSSL 1.1.1 or newer*: `doc_kind="reference"`, `year=2020`, `pep_number=['644']`, `topics=['openssl', 'cryptography', 'tls', 'security', 'standard library']`
+    - *Python Documentation Translations*: `doc_kind="guideline"`, `year=2017`, `pep_number=['545', '3131']`
+- **50 Corpus Documents**:
+  - `prompt=v1 pending=50 ok=50 repaired=2 failed=0`
+  - Total tokens: 123,962 in / 7,086 out | Cost: Rs 5.2158 | Duration: 323s
+  - Self-healing repairs: Two documents (*Python 2.5 Release Schedule* and *Python Language Governance Proposal Overview*) initially produced >8 PEP numbers; the validation-retry loop automatically fed back the Pydantic error and repaired them to $\le 8$ items on attempt 2!
+
+### 5. Dynamic Metadata Query Filtering (`/v1/documents`)
+- Enhanced `/v1/documents` and `DocumentRepository` to filter dynamically by extracted metadata fields:
+  - `GET /v1/documents?doc_kind=guideline&limit=3` $\rightarrow$ returns 5 matching guideline records.
+  - `GET /v1/documents?language=en&limit=3` $\rightarrow$ returns 55 matching English records.
+  - `GET /v1/documents?pep_number=644` $\rightarrow$ returns 1 exact match (PEP 644, matching element inside JSONB list).
+
+### 6. One Thing That Went Wrong Today, and How I Fixed It
+1. `document_text()` in `src/peptalk/llm/extract.py` queried `Page.document_id`, but the database schema declared `Page.doc_id`. I resolved this by adding `document_id = synonym("doc_id")` to the `Page` model in `models.py` and updating `document_text()` to support both column attributes cleanly.
+2. In `src/peptalk/api/schemas.py`, `DocumentResponse` defined `type` and `created` strictly as `str`. When documents were enriched with multi-value extracted lists (`type: ['Standards Track']` and `created: ['01-May-2007']`), FastAPI raised a `ResponseValidationError`. I updated the schema fields to `str | list[str]`, allowing seamless serialization of both single-record and extracted multi-record documents.
