@@ -86,7 +86,13 @@ async def extract(
         out.tokens_out += result.tokens_out
         out.cost_inr += result.cost_inr
         try:
-            out.record = schema.model_validate(parse_json(result.text))
+            record = schema.model_validate(parse_json(result.text))
+            # Ground-truth hallucination check: if year is set, it must appear in the text or title
+            if getattr(record, "year", None) is not None:
+                year_str = str(record.year)
+                if year_str not in text and year_str not in title:
+                    raise ValueError(f"year {record.year} is not in the document")
+            out.record = record
             return out
         except ValueError as error:  # bad JSON, or JSON that breaks the contract
             out.errors.append(explain(error))

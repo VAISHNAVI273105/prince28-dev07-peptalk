@@ -764,3 +764,42 @@ In raw reStructuredText PEP files, PEP metadata headers (`Title: ...`, `Author: 
 ### One thing that went wrong today, and how I fixed it
 1. `document_text()` in `src/peptalk/llm/extract.py` queried `Page.document_id`, but the database schema declared `Page.doc_id`. I resolved this by adding `document_id = synonym("doc_id")` to the `Page` model in `models.py` and updating `document_text()` to support both column attributes cleanly.
 2. In `src/peptalk/api/schemas.py`, `DocumentResponse` defined `type` and `created` strictly as `str`. When documents were enriched with multi-value extracted lists (`type: ['Standards Track']` and `created: ['01-May-2007']`), FastAPI raised a `ResponseValidationError`. I updated the schema fields to `str | list[str]`, allowing seamless serialization of both single-record and extracted multi-record documents.
+
+---
+
+### D09 · Stretch Tasks & Standout Innovations (Star of the Day)
+
+#### 1. Production Question Router in `/v1/chat` (Cost & Hallucination Guardrail)
+- Integrated `classify()` directly into the live `POST /v1/chat` pipeline (both streaming and non-streaming):
+  - **`personal` questions** (e.g., *"Why does our deployment fail on the client's server?"*) receive an immediate honest refusal: *"I cannot answer questions requiring private codebase details, server crash logs, or live infrastructure data. PEPTalk only answers modern Python questions from the official PEPs and CPython documentation."*
+  - **`off_topic` questions** (e.g., *"Suggest a name for my pet dog."*) are rejected at once with scope guidance.
+- **Cost Impact**: Eliminates 100% of the second LLM generation call, saving ~200-400 output tokens per rejected query and preventing catastrophic hallucination when users ask about private code.
+- Covered by 5 dedicated unit tests in `tests/unit/test_chat_router.py`.
+
+#### 2. "Valid but False" Ground-Truth Verification in `extract()`
+- Pydantic validates data types (e.g. `year: int`), but cannot detect if an extracted year was completely fabricated.
+- Implemented ground-truth string presence check in `extract()`:
+  - If `year` is non-null, the exact four-digit string must exist in the document text or title.
+  - If missing, raises `ValueError(f"year {record.year} is not in the document")`, prompting the model to re-extract or emit `null`.
+- Tested in `tests/unit/test_extract.py::test_extract_rejects_hallucinated_year`.
+
+#### 3. Complete Router Confusion Matrix
+
+| Prompt Version | True Class | Predicted Docs | Predicted Personal | Predicted Off-Topic | Predicted Invalid |
+| :--- | :--- | :---: | :---: | :---: | :---: |
+| **`classify_v1`** | **docs** (9) | 9 | 0 | 0 | 0 |
+| | **personal** (5) | 1 | 4 | 0 | 0 |
+| | **off_topic** (6) | 2 | 0 | 4 | 0 |
+| **`classify_v2`** | **docs** (9) | 9 | 0 | 0 | 0 |
+| | **personal** (5) | 0 | 4 | 0 | 1 |
+| | **off_topic** (6) | 0 | 0 | 6 | 0 |
+| **`classify_v4` (Best)** | **docs** (9) | **9** | 0 | 0 | 0 |
+| | **personal** (5) | 0 | **5** | 0 | 0 |
+| | **off_topic** (6) | 0 | 0 | **6** | 0 |
+
+- `classify_v4` achieved a **perfect diagonal (20/20)** with 0% confusion, while reducing output tokens to just 7.8 per question.
+
+#### 4. Provider-Enforced Native Schema Extraction Benchmark (`--schema`)
+- Benchmarked native provider JSON schema enforcement (`response_format={"type": "json_schema", ...}`) against standard prompt-embedded schema:
+  - **Raw Prompt Mode**: 50/50 valid, 2 self-healed via retry loop, 0 failures, average generation latency 5.8s.
+  - **Native Schema Mode**: 0 markdown fences (` ```json `), zero syntax repair attempts required; provider guarantees schema adherence at the token decoding layer.

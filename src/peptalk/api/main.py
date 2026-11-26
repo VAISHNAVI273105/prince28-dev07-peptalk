@@ -55,6 +55,14 @@ def create_app() -> FastAPI:
 
     # Attach LLM prompt and gateway to app state
     app.state.system_prompt = load_prompt(settings.prompts_dir)
+    try:
+        from peptalk.llm.prompts import load_prompt as load_task_prompt
+
+        app.state.router_prompt, app.state.router_version = load_task_prompt(
+            "classify", prompts_dir=settings.prompts_dir
+        )
+    except Exception:
+        app.state.router_prompt, app.state.router_version = "", ""
     app.state.gateway = build_gateway(settings, recorder=record_call)
 
     app.include_router(health_router)
