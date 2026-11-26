@@ -728,3 +728,39 @@ In raw reStructuredText PEP files, PEP metadata headers (`Title: ...`, `Author: 
 - Automated script analyzing all calls in Neon PostgreSQL:
   - 7 Total Calls (4 OK, 3 Errors, 3 Fallbacks).
   - Average Cost per Query: Rs 0.0178 (Target < Rs 0.50 -> **PASS [OK]**).
+
+---
+
+## D09 · Prompts, Question Router, and Structured Document Extraction
+
+### Prompt Version Comparison Table
+
+| Version | Score | Accuracy | Avg In (tokens) | Avg Out (tokens) | Cost (INR) | Primary Changes |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `classify_v1` | 18/20 | 90.0% | 46.4 | 1.3 | Rs 0.0326 | Baseline 1-sentence prompt |
+| `classify_v2` | 19/20 | 95.0% | 260.4 | 158.9 | Rs 0.1632 | Added role, document scope definitions, `<question>` isolation tags |
+| `classify_v3` | 20/20 | 100.0% | 404.9 | 42.5 | Rs 0.1786 | Added 6 few-shot domain examples (2 docs, 2 personal, 2 off-topic) |
+| `classify_v4` | 20/20 | 100.0% | 443.9 | 7.8 | Rs 0.2536 | Tightened output constraint to strict 1-word reply; eliminated verbose reasoning |
+
+### D09 · Prompts and structured output
+- My best router prompt: classify_v4 with 20 / 20 (100.0% accuracy, with output tokens reduced from 42.5 in v3 to 7.8 in v4)
+- What I changed in v4, and what happened to the score: In v4, I tightened the output constraint to strictly return one lowercase word without explanation or punctuation, and added specific scope clarification for cloud infrastructure/speed prediction questions (`personal`). The score remained at 20 / 20 (100%), while average output tokens dropped from 42.5 to 7.8 tokens.
+- The question my best version still gets wrong (line, wanted, got), and why I think so: None (both v3 and v4 achieved 20 / 20). In v2, question 13 ("Will our microservices run faster if we migrate our AWS EC2 instance to Python 3.13 this weekend?") was classified as `invalid` because the model output conversational reasoning instead of a single token. v4 fixed this completely.
+- A label in my test set that I changed after seeing the results (or "none"): none
+- Input tokens per question: v1 46.4 , best version 443.9 . Is the extra accuracy worth it? Yes, absolutely. The jump from 90% in v1 (which failed on prompt injection and basic off-topic queries) to 100% in v4 prevents costly downstream LLM hallucination and prompt leakage, and at ~444 input tokens per routing decision, the cost is only Rs 0.012 per question.
+
+### My contract (DocMeta)
+- Fields I kept from my project card: pep_number, status, type, python_version, created
+- Fields I deleted, and why they make no sense per document: title (already stored in the top-level documents.title column in the database schema, so repeating it inside JSONB metadata would be redundant duplication)
+- The field I tightened, and how: doc_kind was tightened using Literal["guideline", "rule", "notice", "list", "report", "faq", "form", "tutorial", "reference", "other"] rather than open-ended string; and topics was tightened with a @field_validator("topics") that automatically converts all topic tags to lowercase and strips duplicates (list(dict.fromkeys(t.lower() for t in value))).
+
+### Extraction run
+- Prompt version: extract_v1 · documents: 55 ok, 2 repaired, 0 failed (of 799 parsed)
+- Not finished? Why, and how many are left: 744 documents remain unextracted in the background pool. We extracted 55 documents today (5 trial + 50 corpus), satisfying the class requirement (>= 50 documents) while staying safely within the Gemini/Groq free tier rate limits (12 RPM). The remaining documents can be extracted asynchronously tomorrow via the background queue.
+- Most common failure reason, and what I did about it: Pydantic validation error where lists exceeded 8 items (pep_number: List should have at most 8 items on *Python 2.5 Release Schedule* and *Python Language Governance Proposal Overview*). The built-in validation-retry loop automatically fed the exact Pydantic ValidationError back to the model, which repaired the JSON on attempt 2 to <= 8 items without human intervention.
+- A record that was valid but wrong (document, field, what it said, what is true): For PEP 644 (Require OpenSSL 1.1.1 or newer), the model extracted topics: ['openssl', 'cryptography', 'tls', 'security', 'standard library'] which was valid, but initially identified doc_kind: "guideline", whereas PEP 644 is a Standards Track document whose formal role in Python documentation is a technical "reference".
+- Cost at list price: Rs 5.7243 in total, Rs 0.1041 per document
+
+### One thing that went wrong today, and how I fixed it
+1. `document_text()` in `src/peptalk/llm/extract.py` queried `Page.document_id`, but the database schema declared `Page.doc_id`. I resolved this by adding `document_id = synonym("doc_id")` to the `Page` model in `models.py` and updating `document_text()` to support both column attributes cleanly.
+2. In `src/peptalk/api/schemas.py`, `DocumentResponse` defined `type` and `created` strictly as `str`. When documents were enriched with multi-value extracted lists (`type: ['Standards Track']` and `created: ['01-May-2007']`), FastAPI raised a `ResponseValidationError`. I updated the schema fields to `str | list[str]`, allowing seamless serialization of both single-record and extracted multi-record documents.

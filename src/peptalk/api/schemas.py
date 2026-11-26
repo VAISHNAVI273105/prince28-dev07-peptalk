@@ -12,9 +12,11 @@ class DocumentResponse(BaseModel):
 
     id: str = Field(description="Unique document identifier (e.g. 'pep-0634').")
     title: str = Field(description="Title of the document.")
-    type: str = Field(default="PEP", description="Type of document (e.g. 'PEP' or 'What's New').")
+    type: str | list[str] = Field(
+        default="PEP", description="Type of document (e.g. 'PEP' or 'What's New')."
+    )
     source_url: str = Field(description="Canonical upstream source URL.")
-    created: str | None = Field(default=None, description="ISO publication date.")
+    created: str | list[str] | None = Field(default=None, description="ISO publication date.")
     licence: str | None = Field(default=None, description="Documentation license.")
     summary: str | None = Field(default=None, description="First-page text summary.")
 

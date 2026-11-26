@@ -106,6 +106,7 @@ class DocumentRepositoryProtocol(Protocol):
         python_version: str | None = None,
         status: str | None = None,
         pep_number: int | None = None,
+        **extra_filters: Any,
     ) -> tuple[list[dict[str, Any]], int]:
         """List documents matching filters with pagination."""
         ...
@@ -183,7 +184,8 @@ class DocumentRepository:
         doc_type: str | None = None,
         python_version: str | None = None,
         status: str | None = None,
-        pep_number: int | None = None,
+        pep_number: int | str | None = None,
+        **extra_filters: Any,
     ) -> tuple[list[dict[str, Any]], int]:
         """List documents matching filters with pagination."""
         conditions = []
@@ -193,14 +195,51 @@ class DocumentRepository:
 
         if python_version is not None:
             conditions.append(
-                Document.document_metadata.contains({"python_version": python_version})
+                or_(
+                    Document.document_metadata.contains({"python_version": python_version}),
+                    Document.document_metadata.contains({"python_version": [python_version]}),
+                )
             )
 
         if status is not None:
-            conditions.append(Document.document_metadata.contains({"status": status}))
+            conditions.append(
+                or_(
+                    Document.document_metadata.contains({"status": status}),
+                    Document.document_metadata.contains({"status": [status]}),
+                )
+            )
 
         if pep_number is not None:
-            conditions.append(Document.document_metadata.contains({"pep_number": pep_number}))
+            pep_str = str(pep_number)
+            clauses = [
+                Document.document_metadata.contains({"pep_number": pep_str}),
+                Document.document_metadata.contains({"pep_number": [pep_str]}),
+            ]
+            if pep_str.isdigit():
+                clauses.extend(
+                    [
+                        Document.document_metadata.contains({"pep_number": int(pep_str)}),
+                        Document.document_metadata.contains({"pep_number": [int(pep_str)]}),
+                    ]
+                )
+            conditions.append(or_(*clauses))
+
+        for k, v in extra_filters.items():
+            if v is None:
+                continue
+            val_str = str(v)
+            val_clauses = [
+                Document.document_metadata.contains({k: v}),
+                Document.document_metadata.contains({k: [v]}),
+            ]
+            if val_str.isdigit() and not isinstance(v, int):
+                val_clauses.extend(
+                    [
+                        Document.document_metadata.contains({k: int(val_str)}),
+                        Document.document_metadata.contains({k: [int(val_str)]}),
+                    ]
+                )
+            conditions.append(or_(*val_clauses))
 
         # Total count query
         count_stmt = select(func.count()).select_from(Document)
@@ -319,6 +358,7 @@ class DocumentStoreAdapter:
         python_version: str | None = None,
         status: str | None = None,
         pep_number: int | None = None,
+        **extra_filters: Any,
     ) -> tuple[list[dict[str, Any]], int]:
         items = self.store.get_all()
         if doc_type is not None:
@@ -329,6 +369,24 @@ class DocumentStoreAdapter:
             items = [d for d in items if d.get("status") == status]
         if pep_number is not None:
             items = [d for d in items if d.get("pep_number") == pep_number]
+
+        def _match_val(val: Any, target_str: str, target_int: int | None) -> bool:
+            if val is None:
+                return False
+            if isinstance(val, list):
+                return any(
+                    str(elem).lower() == target_str
+                    or (target_int is not None and elem == target_int)
+                    for elem in val
+                )
+            return str(val).lower() == target_str or (target_int is not None and val == target_int)
+
+        for k, v in extra_filters.items():
+            if v is None:
+                continue
+            v_str = str(v).lower()
+            v_int = int(v) if str(v).isdigit() else None
+            items = [d for d in items if _match_val(d.get(k), v_str, v_int)]
 
         total = len(items)
         if total == 0 or offset >= total:

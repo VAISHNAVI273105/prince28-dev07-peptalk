@@ -78,6 +78,7 @@ class Page(Base):
         ForeignKey("documents.id", ondelete="CASCADE"),
         primary_key=True,
     )
+    document_id = synonym("doc_id")
     page_no: Mapped[int] = mapped_column(Integer, primary_key=True)
     text: Mapped[str] = mapped_column(Text, nullable=False)
     # The section path this page starts in, e.g. ["Fever", "Dengue"]: used for citations.
