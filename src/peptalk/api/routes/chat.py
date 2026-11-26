@@ -95,8 +95,10 @@ async def chat(body: ChatRequest, request: Request, gateway: GatewayDep):
                     return StreamingResponse(
                         refusal_events(), media_type="text/event-stream", headers=headers
                     )
-            except LLMUnavailable:
-                raise
+            except LLMUnavailable as exc:
+                raise HTTPException(
+                    status_code=503, detail=f"No model could answer: {exc}"
+                ) from exc
             except Exception:
                 pass
 

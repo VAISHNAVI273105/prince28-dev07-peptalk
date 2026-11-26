@@ -74,8 +74,8 @@ async def test_extract_happy_path():
         schema=DocMeta,
         prompt="Extract prompt",
         version="v1",
-        title="PEP 8",
-        text="Style Guide for Python Code",
+        title="PEP 8 (2024)",
+        text="Style Guide for Python Code (2024)",
     )
 
     assert res.record is not None
@@ -99,8 +99,8 @@ async def test_extract_repair_loop():
         schema=DocMeta,
         prompt="Extract prompt",
         version="v1",
-        title="PEP 8",
-        text="Style Guide for Python Code",
+        title="PEP 8 (2024)",
+        text="Style Guide for Python Code (2024)",
     )
 
     assert res.record is not None
@@ -126,8 +126,8 @@ async def test_extract_exhausts_retries_returns_none():
         schema=DocMeta,
         prompt="Extract prompt",
         version="v1",
-        title="PEP 8",
-        text="Style Guide for Python Code",
+        title="PEP 8 (2024)",
+        text="Style Guide for Python Code (2024)",
         max_attempts=3,
     )
 
