@@ -32,10 +32,11 @@ async def test_pending_and_save_metadata(session):
 
     doc = Document(
         id=doc_id,
-        external_id="PEP-0008",
         title="Style Guide for Python Code",
+        source_url="https://peps.python.org/pep-0008/",
+        sha256="0123456789abcdef" * 4,
         doc_type="PEP",
-        metadata_={"source": "pep-0008.txt", "parser": "text", "chars": 1500},
+        document_metadata={"source": "pep-0008.txt", "parser": "text", "chars": 1500},
     )
     session.add(doc)
     await session.commit()
