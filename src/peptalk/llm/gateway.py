@@ -99,8 +99,16 @@ class OpenAICompatProvider:
         # 10 s to connect; `timeout` seconds of silence at most while the answer arrives
         self._client = client or httpx.AsyncClient(timeout=httpx.Timeout(timeout, connect=10.0))
 
-    def _body(self, messages: list[Message], temperature: float, stream: bool) -> dict:
+    def _body(
+        self,
+        messages: list[Message],
+        temperature: float,
+        stream: bool,
+        response_format: dict | None = None,
+    ) -> dict:
         body: dict = {"model": self.model, "messages": messages, "temperature": temperature}
+        if response_format:
+            body["response_format"] = response_format
         if stream:
             body |= {"stream": True, "stream_options": {"include_usage": True}}
         return body
@@ -122,8 +130,15 @@ class OpenAICompatProvider:
         timed_out = isinstance(exc, httpx.TimeoutException)
         return LLMError(type(exc).__name__, retryable=not timed_out)
 
-    async def generate(self, messages: list[Message], *, temperature: float = 0.2) -> Reply:
-        body = self._body(messages, temperature, stream=False)
+    async def generate(
+        self,
+        messages: list[Message],
+        *,
+        temperature: float = 0.2,
+        response_format: dict | None = None,
+        **options,
+    ) -> Reply:
+        body = self._body(messages, temperature, stream=False, response_format=response_format)
         try:
             response = await self._client.post(self._url, headers=self._headers, json=body)
         except httpx.TransportError as exc:
@@ -136,10 +151,16 @@ class OpenAICompatProvider:
         return Reply(text, usage.get("prompt_tokens", 0), usage.get("completion_tokens", 0))
 
     async def stream(
-        self, messages: list[Message], usage: Reply, *, temperature: float = 0.2
+        self,
+        messages: list[Message],
+        usage: Reply,
+        *,
+        temperature: float = 0.2,
+        response_format: dict | None = None,
+        **options,
     ) -> AsyncIterator[str]:
         """Yield the answer piece by piece (server-sent events). Fills `usage` at the end."""
-        body = self._body(messages, temperature, stream=True)
+        body = self._body(messages, temperature, stream=True, response_format=response_format)
         try:
             async with self._client.stream(
                 "POST", self._url, headers=self._headers, json=body
@@ -186,14 +207,16 @@ class FakeLLM:
         self.calls += 1
         return self.script.pop(0) if self.script else "A fake answer."
 
-    async def generate(self, messages: list[Message], *, temperature: float = 0.2) -> Reply:
+    async def generate(
+        self, messages: list[Message], *, temperature: float = 0.2, **options
+    ) -> Reply:
         item = self._next()
         if isinstance(item, Exception):
             raise item
         return Reply(str(item), tokens_in=12, tokens_out=len(str(item).split()))
 
     async def stream(
-        self, messages: list[Message], usage: Reply, *, temperature: float = 0.2
+        self, messages: list[Message], usage: Reply, *, temperature: float = 0.2, **options
     ) -> AsyncIterator[str]:
         item = self._next()
         if isinstance(item, Exception):
