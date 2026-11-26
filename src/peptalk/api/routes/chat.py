@@ -11,10 +11,21 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from peptalk.api.deps import GatewayDep, UsageDep
+from peptalk.llm.classify import classify
 from peptalk.llm.gateway import LLMResult, LLMUnavailable
 
 router = APIRouter(tags=["chat"])
 PROMPT_VERSION = "chat_system_v1"  # the file prompts/chat_system_v1.md
+
+PERSONAL_REFUSAL = (
+    "I cannot answer questions requiring private codebase details, server crash logs, "
+    "or live infrastructure data. PEPTalk only answers modern Python questions from the "
+    "official PEPs and CPython documentation."
+)
+OFF_TOPIC_REFUSAL = (
+    "This question is outside PEPTalk's scope. I only answer questions related to "
+    "Python PEPs and CPython What's New documentation."
+)
 
 
 def load_prompt(directory: Path, name: str = PROMPT_VERSION) -> str:
@@ -31,6 +42,7 @@ class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=4000)
     stream: bool = True
     history: list[ChatMessage] = Field(default_factory=list, max_length=6)
+    route: bool = True
 
 
 def sse(data: dict, event: str = "") -> str:
@@ -45,6 +57,49 @@ def summary(result: LLMResult) -> dict:
 
 @router.post("/chat")
 async def chat(body: ChatRequest, request: Request, gateway: GatewayDep):
+    if body.route:
+        router_prompt = getattr(request.app.state, "router_prompt", None)
+        router_ver = getattr(request.app.state, "router_version", "v4")
+        if not router_prompt:
+            try:
+                from peptalk.llm.prompts import load_prompt as load_task_prompt
+
+                router_prompt, router_ver = load_task_prompt("classify", prompts_dir="prompts")
+            except Exception:
+                router_prompt = None
+
+        if router_prompt:
+            try:
+                label, route_res = await classify(gateway, router_prompt, router_ver, body.message)
+                if label in ("personal", "off_topic"):
+                    refusal = PERSONAL_REFUSAL if label == "personal" else OFF_TOPIC_REFUSAL
+                    refusal_res = LLMResult(
+                        text=refusal,
+                        provider=route_res.provider,
+                        model=route_res.model,
+                        tokens_in=route_res.tokens_in,
+                        tokens_out=route_res.tokens_out,
+                        latency_ms=route_res.latency_ms,
+                        attempts=route_res.attempts,
+                        fallback_used=route_res.fallback_used,
+                        cost_inr=route_res.cost_inr,
+                    )
+                    if not body.stream:
+                        return {"answer": refusal, "routed": label, **summary(refusal_res)}
+
+                    async def refusal_events() -> AsyncIterator[str]:
+                        yield sse({"delta": refusal})
+                        yield sse({**summary(refusal_res), "routed": label}, event="done")
+
+                    headers = {"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
+                    return StreamingResponse(
+                        refusal_events(), media_type="text/event-stream", headers=headers
+                    )
+            except LLMUnavailable:
+                raise
+            except Exception:
+                pass
+
     messages: list[dict[str, str]] = [
         {"role": "system", "content": request.app.state.system_prompt}
     ]
