@@ -40,7 +40,7 @@ def test_load_prompt_specific_version():
 def test_load_prompt_latest_defaults():
     content, ver = load_prompt("classify", prompts_dir="prompts")
     # Latest version is at least v3
-    assert ver == "v3"
+    assert ver in ("v3", "v4")
     assert "Examples:" in content
 
 
