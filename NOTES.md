@@ -803,3 +803,41 @@ In raw reStructuredText PEP files, PEP metadata headers (`Title: ...`, `Author: 
 - Benchmarked native provider JSON schema enforcement (`response_format={"type": "json_schema", ...}`) against standard prompt-embedded schema:
   - **Raw Prompt Mode**: 50/50 valid, 2 self-healed via retry loop, 0 failures, average generation latency 5.8s.
   - **Native Schema Mode**: 0 markdown fences (` ```json `), zero syntax repair attempts required; provider guarantees schema adherence at the token decoding layer.
+
+---
+
+### D10 · Queue and worker
+
+- First run: 10 documents queued, finished in 51 s. Done 10, skipped 0, failed 0
+- Pace: 5.1 s per document (INGEST_RPM = 12.0, INGEST_CONCURRENCY = 2)
+
+### Kill test
+
+- Queued: 20. At the kill: queued 7, running 2, done 11, failed 0
+- After the new worker: done 20 + skipped 0 + failed 0 = 20 (must be 20)
+- Documents in the database: 777, different ids: 777 (must be equal)
+- The interrupted items came back after 68 s. Why that long: The in-flight item visibility timeout (`ingest_job_timeout = 60` seconds) had to elapse before arq released its lock, combined with worker initialization and startup re-queuing of in-flight records.
+- Why nothing was doubled (one sentence, in my own words): The pipeline is strictly idempotent: `process()` checks content SHA-256 against already persisted records before committing and skips re-saving existing documents.
+
+### Dead-letter list
+
+| Stage (parse / extract / download / gave up) | Items | What I did |
+|---|---|---|
+| parse | 0 | All documents parsed without text extraction or encoding failures |
+| extract | 0 | Pydantic validation retry loop self-healed schema edge cases |
+| download | 0 | Raw GitHub repository URLs resolved cleanly with polite backpressure |
+| gave up | 0 | Zero documents exceeded maximum attempts (`ingest_max_tries = 3`) |
+
+### Live ingestion
+
+- PEPTalk on Render: 5 of 5 documents done, 0 failed. The reasons: Render web service runs an embedded background worker (`WORKER_IN_API=true`) with Redis key-value backing.
+- A request without the token gets status 401
+
+### Week 2 against Monday's estimate
+
+- docs/CAPACITY.md said: 5,138 pages, 3,853,606 tokens. docs/INGEST_REPORT.md says: 5,670 pages, 3,638,341 tokens.
+- The difference, and why: Actual token volume was within 5.6% of Monday's heuristic estimate (3.64M vs 3.85M), while page count was 10.3% higher because multi-section PEPs spanned slightly more logical pages than the flat 3,000 char threshold.
+
+### One thing that went wrong today, and how I fixed it
+1. FastAPI dependency overrides with `lambda *args, **kwargs` caused FastAPI to inspect parameter signatures and treat kwargs as required query parameters (returning 422 Unprocessable Entity in unit tests). Fixed by defining explicit zero-argument helper functions.
+2. An older Docker container on the host held port 8000, causing local API verification tests to hit a stale endpoint. Diagnosed via `docker ps`, stopped the stale container, and successfully bound the local API instance.

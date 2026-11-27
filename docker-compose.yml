@@ -62,11 +62,15 @@ services:
     image: peptalk:dev
     container_name: peptalk-api
     restart: unless-stopped
-    environment:
+    environment: &app-env
       APP_ENV: production
       LOG_LEVEL: INFO
       DATABASE_URL: postgresql+asyncpg://peptalk:peptalk_dev_password@db:5432/peptalk  # pragma: allowlist secret
+      REDIS_URL: redis://redis:6379
       DATA_FILE: /app/data/sample_records.json
+    env_file: &keys
+      - path: .env
+        required: false
     ports:
       - "8000:8000"
     depends_on:
@@ -99,6 +103,31 @@ services:
       - 0.0.0.0
       - --port
       - "8000"
+
+  worker:
+    build:
+      context: .
+      target: runtime
+    image: peptalk:dev
+    container_name: peptalk-worker
+    restart: unless-stopped
+    command: ["arq", "peptalk.workers.main.WorkerSettings"]
+    environment: *app-env
+    env_file: *keys
+    volumes:
+      - ./data/raw:/app/data/raw:ro
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   postgres_data:
