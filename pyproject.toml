@@ -38,6 +38,7 @@ dependencies = [
     "pypdf>=7.1.1",
     "pymupdf>=1.26,<2",
     "trafilatura>=2.4.0",
+    "arq>=0.28.0",
 ]
 
 [project.urls]
@@ -78,6 +79,8 @@ omit = ["tests/*"]
 show_missing = true
 
 [tool.poe.tasks]
+dev = "uvicorn peptalk.api.main:create_app --factory --reload --port 8000"
+worker = "arq peptalk.workers.main.WorkerSettings"
 test = "pytest"
 test-unit = "pytest tests/unit"
 test-integration = "pytest tests/integration"
