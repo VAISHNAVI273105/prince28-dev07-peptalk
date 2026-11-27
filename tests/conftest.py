@@ -113,6 +113,35 @@ class FakeIngestRepo:
     async def failed_records(self) -> list[dict[str, Any]]:
         return [it["record"] for it in self.items.values() if it["status"] == "failed"]
 
+    async def stats(self) -> dict[str, Any]:
+        counts = {"queued": 0, "running": 0, "done": 0, "skipped": 0, "failed": 0}
+        for it in self.items.values():
+            st = it["status"]
+            if st in counts:
+                counts[st] += 1
+        queued = [it for it in self.items.values() if it["status"] == "queued"]
+        oldest_age = None
+        if queued:
+            oldest_age = 15.0  # default simulated age
+        return {
+            "counts": counts,
+            "total_items": len(self.items),
+            "oldest_queued_age_seconds": oldest_age,
+            "queue_healthy": oldest_age is None or oldest_age < 180.0,
+        }
+
+    async def retry_dead_letter(self, limit: int = 50, stage: str = "") -> list[int]:
+        requeued = []
+        for it in self.items.values():
+            if it["status"] == "failed" and (not stage or it.get("error", "").startswith(stage)):
+                it["status"] = "queued"
+                it["attempts"] = 0
+                it["error"] = ""
+                requeued.append(it["id"])
+                if len(requeued) >= limit:
+                    break
+        return requeued
+
 
 @pytest.fixture
 def fake_llm() -> FakeLLM:

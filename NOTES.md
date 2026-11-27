@@ -841,3 +841,22 @@ In raw reStructuredText PEP files, PEP metadata headers (`Title: ...`, `Author: 
 ### One thing that went wrong today, and how I fixed it
 1. FastAPI dependency overrides with `lambda *args, **kwargs` caused FastAPI to inspect parameter signatures and treat kwargs as required query parameters (returning 422 Unprocessable Entity in unit tests). Fixed by defining explicit zero-argument helper functions.
 2. An older Docker container on the host held port 8000, causing local API verification tests to hit a stale endpoint. Diagnosed via `docker ps`, stopped the stale container, and successfully bound the local API instance.
+
+---
+
+### D10 · Stretch Tasks & Standout Innovations (Star of the Day)
+
+#### 1. Real-Time Queue Health & Observability Endpoint (`GET /v1/ingest/stats`)
+- Implemented global queue health telemetry across all batch jobs:
+  - Aggregates status distribution (`queued`, `running`, `done`, `skipped`, `failed`).
+  - Measures `oldest_queued_age_seconds` by calculating real-time elapsed latency since the earliest pending item's enqueue timestamp.
+  - Automatically evaluates `queue_healthy`: flags `False` if queue starvation or worker blockage exceeds the 180-second SLA threshold.
+- Covered by 5 dedicated unit tests in `tests/unit/test_ingest_stats.py` verifying empty queue, active jobs, lagging starvation detection, and API route serialization.
+
+#### 2. Granular Dead-Letter Selective Retry (`POST /v1/ingest/retry`)
+- Built authenticated selective re-queuing endpoint allowing DevOps administrators to filter failed items by failure stage (`parse`, `extract`, `download`, `gave up`).
+- Automatically resets attempt counters to 0, clears error strings, and enqueues matching IDs into the Redis job pool with atomic database state transitions.
+
+#### 3. Queue Observability CLI Tool (`scripts/queue_stats.py`)
+- Created a standalone terminal monitoring client that queries `/v1/ingest/stats` and renders an formatted ASCII status dashboard displaying queue health badges, item backlog, and lag seconds.
+- Usable against local development and live production URLs (`uv run python scripts/queue_stats.py --url https://peptalk-l60c.onrender.com`).
