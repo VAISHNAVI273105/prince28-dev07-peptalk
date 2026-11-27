@@ -50,6 +50,26 @@ async def dead_letter(
     return {"count": len(items), "items": items}
 
 
+@router.get("/stats")
+async def queue_stats(repo: IngestRepoDep) -> dict:
+    """Queue health and status distribution across all jobs (Stretch Task)."""
+    return await repo.stats()
+
+
+class RetryRequest(BaseModel):
+    limit: int = Field(default=50, ge=1, le=500)
+    stage: str = Field(default="", max_length=50)
+
+
+@router.post("/retry", dependencies=[Depends(require_admin)])
+async def retry_failed_items(body: RetryRequest, repo: IngestRepoDep, queue: QueueDep) -> dict:
+    """Re-enqueue failed items matching stage prefix back to the queue."""
+    item_ids = await repo.retry_dead_letter(limit=body.limit, stage=body.stage)
+    if item_ids:
+        await queue.put(item_ids)
+    return {"requeued": len(item_ids), "item_ids": item_ids}
+
+
 @router.get("/{job_id}")
 async def progress(job_id: str, repo: IngestRepoDep) -> dict:
     found = await repo.progress(job_id)
